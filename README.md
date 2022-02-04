@@ -24,5 +24,5 @@ cargo run -p bot
 ### Development
 To start CMS server run
 ```
-cargo run -p sms
+cargo run -p cms
 ```

@@ -6,10 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-teloxide = { version = "0.5", features = ["full"] }
+teloxide = { version = "0.5", features = ["auto-send", "macros"] }
 serde = { version = "1.0", features = ["derive"]  }
 serde_json = { version = "1.0" }
 serde_repr = "0.1"
+diesel = { version = "1.4", features = ["sqlite"] }
+db = {path = "../db"}
 
 tokio = { version =  "1.15", features = ["full"] }
 log = "0.4.8"

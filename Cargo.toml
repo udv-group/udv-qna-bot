@@ -3,4 +3,5 @@
 members = [
     "bot",
     "cms",
+    "db"
 ]

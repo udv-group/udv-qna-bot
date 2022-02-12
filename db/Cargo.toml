@@ -6,8 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-diesel = { version = "1.4", features = ["sqlite"] }
+sqlx = { version = "0.5", features = [ "runtime-tokio-native-tls" , "sqlite", "migrate" ] }
 dotenv = "0.15"
-
-[dev-dependencies]
-diesel_migrations = "1.4.0"
+anyhow = "1.0"

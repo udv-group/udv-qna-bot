@@ -1,119 +1,74 @@
 pub mod models;
-pub mod schema;
 
-#[macro_use]
-extern crate diesel;
-#[cfg(test)]
-extern crate diesel_migrations;
+use sqlx::sqlite::SqlitePool;
 
 extern crate dotenv;
 
-use crate::models::{Category, NewCategory, NewQuestion, Question};
-
-use diesel::prelude::*;
-use diesel::sqlite::SqliteConnection;
+use crate::models::*;
 use dotenv::dotenv;
+use sqlx::{Error, Sqlite};
 use std::env;
 
-pub fn establish_connection() -> ConnectionResult<SqliteConnection> {
+pub async fn establish_connection() -> Result<SqlitePool, Error> {
     dotenv().ok();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url)
+    SqlitePool::connect(&database_url).await
 }
 
 //todo: return Result
-pub fn create_category(conn: &SqliteConnection, name: &str) {
-    use schema::categories;
-    let new_category = NewCategory { name };
-    diesel::insert_into(categories::table)
-        .values(&new_category)
-        .execute(conn)
-        .unwrap();
+pub async fn create_category(pool: &SqlitePool, name: &str) -> anyhow::Result<i64> {
+    let mut conn = pool.acquire().await?;
+
+    let id = sqlx::query!(
+        r#"
+INSERT INTO categories (name) VALUES (?1)
+        "#,
+        name
+    )
+    .execute(&mut conn)
+    .await?
+    .last_insert_rowid();
+
+    Ok(id)
 }
 
-pub fn get_categories(conn: &SqliteConnection) -> Vec<Category> {
-    use crate::schema::categories::dsl::*;
-    categories
-        .load::<Category>(conn)
-        .expect("Error loading posts")
+pub async fn get_categories(pool: &SqlitePool) -> sqlx::Result<Vec<Category>> {
+    sqlx::query_as!(
+        Category,
+        r#"
+SELECT id, name
+FROM categories
+ORDER BY id
+        "#
+    )
+    .fetch_all(pool)
+    .await
 }
 
-pub fn delete_questions(conn: &SqliteConnection) {
-    use schema::questions;
-    diesel::delete(questions::table).execute(conn).unwrap();
+pub async fn get_questions_by_category(
+    pool: &SqlitePool,
+    category: &str,
+) -> sqlx::Result<Vec<Question>> {
+    sqlx::query_as!(
+        Question,
+        r#"
+        SELECT questions.id, questions.category, questions.question, questions.answer FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1
+        "#,
+        category
+    ).fetch_all(pool).await
 }
 
-pub fn get_question_by_id(conn: &SqliteConnection, id_: i32) -> Question {
-    use crate::schema::questions::dsl::*;
-    questions
-        .filter(id.eq(id_))
-        .first::<Question>(conn)
-        .expect("Error loading posts")
-}
-
-//todo: return Result
-pub fn create_question(
-    conn: &SqliteConnection,
-    question: &str,
-    answer: &str,
-    category: Option<i32>,
-) {
-    use schema::questions;
-    let new_question = NewQuestion {
-        category,
-        question,
-        answer,
-    };
-    diesel::insert_into(questions::table)
-        .values(&new_question)
-        .execute(conn)
-        .unwrap();
-}
-
-pub fn get_questions_by_category(conn: &SqliteConnection, category_id: i32) -> Vec<Question> {
-    use crate::schema::questions::dsl::*;
-    questions
-        .filter(category.eq(category_id))
-        .load::<Question>(conn)
-        .expect("Error loading posts")
-}
-
-pub fn delete_categories(conn: &SqliteConnection) {
-    use schema::categories;
-    diesel::delete(categories::table).execute(conn).unwrap();
+pub async fn get_question(pool: &SqlitePool, question: &str) -> sqlx::Result<Question> {
+    sqlx::query_as!(
+        Question,
+        r#"
+        SELECT * FROM questions WHERE questions.question = ?1
+        "#,
+        question
+    )
+    .fetch_one(pool)
+    .await
 }
 
 #[cfg(test)]
-mod tests {
-    extern crate diesel;
-    use super::models::*;
-    use super::*;
-
-    #[test]
-    #[ignore]
-    fn test_categories_crud() {
-        use crate::schema::categories::dsl::*;
-        let connection = establish_connection().unwrap();
-        create_category(&connection, "test");
-        let results = categories
-            .limit(5)
-            .load::<Category>(&connection)
-            .expect("Error loading posts");
-        assert!(!results.is_empty());
-        delete_categories(&connection);
-    }
-
-    #[test]
-    #[ignore]
-    fn test_questions_crud() {
-        use crate::schema::questions::dsl::*;
-        let connection = establish_connection().unwrap();
-        create_question(&connection, "test", "test", None);
-        let results = questions
-            .limit(5)
-            .load::<Question>(&connection)
-            .expect("Error loading posts");
-        assert!(!results.is_empty());
-        delete_questions(&connection);
-    }
-}
+mod tests {}

@@ -1,25 +1,20 @@
-#[macro_use]
-use diesel;
-use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
+use std::borrow::Borrow;
 
 use std::error::Error;
 use std::sync::Arc;
+
 use teloxide::{
     payloads::SendMessageSetters,
-    prelude::*,
+    prelude2::*,
     types::{InlineKeyboardButton, InlineKeyboardMarkup},
     utils::command::BotCommand,
 };
 
 use serde::{Deserialize, Serialize};
 
-use db;
-use db::models::Category;
-use db::schema::questions::category;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use tokio::sync::Mutex;
-use tokio_stream::wrappers::UnboundedReceiverStream;
 
 #[derive(BotCommand)]
 #[command(rename = "lowercase", description = "These commands are supported:")]
@@ -109,31 +104,32 @@ fn make_keyboard(
 /// or not, then match the command. If the command is `/start` it writes a
 /// markup with the `InlineKeyboardMarkup`.
 async fn message_handler(
-    cx: UpdateWithCx<AutoSend<Bot>, Message>,
-    conn: SqliteConnection,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
-    use db::schema::categories::dsl::*;
-
-    if let Some(text) = cx.update.text() {
+    msg: Message,
+    bot: AutoSend<Bot>,
+    conn: Arc<Mutex<SqliteConnection>>,
+) -> Result<(), teloxide::RequestError> {
+    if let Some(text) = msg.text() {
         match BotCommand::parse(text, "buttons") {
             Ok(Command::Help) => {
                 // Just send the description of all commands.
-                cx.answer(Command::descriptions()).await?;
+                bot.send_message(msg.chat.id, Command::descriptions())
+                    .await?;
             }
             Ok(Command::Start) => {
                 // Create a list of buttons and send them.
-                let results: Vec<(String, i32)> = db::get_categories(&conn)
+                let results: Vec<(String, i32)> = db::get_categories(conn.lock().await.borrow())
                     .into_iter()
                     .map(|category_| (category_.name, category_.id))
                     .collect();
                 let keyboard = make_keyboard(results, None, KeyboardType::Category);
-                cx.answer("Available categories:")
+                bot.send_message(msg.chat.id, "Available categories:")
                     .reply_markup(keyboard)
                     .await?;
             }
 
             Err(_) => {
-                cx.reply_to("Command not found!").await?;
+                log::info!("{}", text);
+                bot.send_message(msg.chat.id, "Command not found!").await?;
             }
         }
     }
@@ -146,7 +142,7 @@ async fn update_message<T: Into<String>>(
     message: Option<Message>,
     text: T,
     keyboard: InlineKeyboardMarkup,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
+) -> Result<(), teloxide::RequestError> {
     match message {
         Some(Message { id, chat, .. }) => {
             bot.edit_message_text(chat.id, id, text)
@@ -163,25 +159,24 @@ async fn update_message<T: Into<String>>(
 /// When it receives a callback from a button it edits the message with all
 /// those buttons writing a text with the selected Debian version.
 async fn callback_handler(
-    cx: UpdateWithCx<AutoSend<Bot>, CallbackQuery>,
-    conn: SqliteConnection,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let UpdateWithCx {
-        requester: bot,
-        update: query,
-    } = cx;
+    query: CallbackQuery,
+    bot: AutoSend<Bot>,
+    conn: Arc<Mutex<SqliteConnection>>,
+) -> Result<(), teloxide::RequestError> {
     if let Some(data) = query.data {
         log::info!("Selected: {}", data);
-        let callback_info: CallbackInfo = serde_json::from_str(&data)?;
+        let callback_info: CallbackInfo = serde_json::from_str(&data).unwrap();
         match callback_info.keyboard_type {
             // if user tapped category button switch to questions in that category
             // user can only go Next
             KeyboardType::Category => {
-                let results: Vec<(String, i32)> =
-                    db::get_questions_by_category(&conn, callback_info.button_id) // todo: filter by category
-                        .into_iter()
-                        .map(|item| (item.question, item.id))
-                        .collect();
+                let results: Vec<(String, i32)> = db::get_questions_by_category(
+                    conn.lock().await.borrow(),
+                    callback_info.button_id,
+                ) // todo: filter by category
+                .into_iter()
+                .map(|item| (item.question, item.id))
+                .collect();
                 let keyboard = make_keyboard(
                     results,
                     Some(callback_info.button_id),
@@ -192,11 +187,13 @@ async fn callback_handler(
             // if user tapped "Go Back" on the answer - return to the questions list
             // user can only go Back
             KeyboardType::Answer => {
-                let results: Vec<(String, i32)> =
-                    db::get_questions_by_category(&conn, callback_info.previous_state_id.unwrap()) // todo: filter by category
-                        .into_iter()
-                        .map(|item| (item.question, item.id))
-                        .collect();
+                let results: Vec<(String, i32)> = db::get_questions_by_category(
+                    conn.lock().await.borrow(),
+                    callback_info.previous_state_id.unwrap(),
+                ) // todo: filter by category
+                .into_iter()
+                .map(|item| (item.question, item.id))
+                .collect();
                 let keyboard = make_keyboard(results, None, KeyboardType::Question);
                 update_message(bot, query.message, "Select a question", keyboard).await?;
             }
@@ -204,16 +201,18 @@ async fn callback_handler(
             KeyboardType::Question => match callback_info.state {
                 // user selected a question, show the answer, set the Go Back button id as this question id
                 StateSwitch::Next => {
-                    let question = db::get_question_by_id(&conn, callback_info.button_id);
+                    let question =
+                        db::get_question_by_id(conn.lock().await.borrow(), callback_info.button_id);
                     let keyboard = make_keyboard(vec![], question.category, KeyboardType::Answer);
                     update_message(bot, query.message, question.answer, keyboard).await?;
                 }
                 // user wants to go back to category selection
                 StateSwitch::Back => {
-                    let results: Vec<(String, i32)> = db::get_categories(&conn)
-                        .into_iter()
-                        .map(|category_| (category_.name, category_.id))
-                        .collect();
+                    let results: Vec<(String, i32)> =
+                        db::get_categories(conn.lock().await.borrow())
+                            .into_iter()
+                            .map(|category_| (category_.name, category_.id))
+                            .collect();
                     let keyboard = make_keyboard(results, None, KeyboardType::Category);
                     update_message(bot, query.message, "Available categories", keyboard).await?;
                 }
@@ -227,23 +226,15 @@ async fn callback_handler(
 async fn run() -> Result<(), Box<dyn Error>> {
     let bot = Bot::from_env().auto_send();
     // TODO: share the connection somehow
-    Dispatcher::new(bot)
-        .messages_handler(|rx: DispatcherHandlerRx<AutoSend<Bot>, Message>| {
-            UnboundedReceiverStream::new(rx).for_each_concurrent(None, |cx| async move {
-                message_handler(cx, db::establish_connection().unwrap())
-                    .await
-                    .log_on_error()
-                    .await;
-            })
-        })
-        .callback_queries_handler(|rx: DispatcherHandlerRx<AutoSend<Bot>, CallbackQuery>| {
-            UnboundedReceiverStream::new(rx).for_each_concurrent(None, |cx| async move {
-                callback_handler(cx, db::establish_connection().unwrap())
-                    .await
-                    .log_on_error()
-                    .await;
-            })
-        })
+    let conn = Arc::new(Mutex::new(db::establish_connection()?));
+    let handler = dptree::entry()
+        .branch(Update::filter_message().endpoint(message_handler))
+        .branch(Update::filter_callback_query().endpoint(callback_handler));
+
+    Dispatcher::builder(bot, handler)
+        .dependencies(dptree::deps![conn])
+        .build()
+        .setup_ctrlc_handler()
         .dispatch()
         .await;
 

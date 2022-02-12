@@ -6,13 +6,19 @@ extern crate dotenv;
 
 use crate::models::*;
 use dotenv::dotenv;
-use sqlx::{Error, Sqlite};
+use sqlx::Error;
 use std::env;
 
 pub async fn establish_connection() -> Result<SqlitePool, Error> {
     dotenv().ok();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     SqlitePool::connect(&database_url).await
+}
+
+pub async fn run_migrations() -> Result<(), Error> {
+    let pool = establish_connection().await?;
+    sqlx::migrate!("./migrations").run(&pool).await?;
+    Ok(())
 }
 
 //todo: return Result

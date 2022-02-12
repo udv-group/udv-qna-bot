@@ -10,15 +10,15 @@ Install sqlite3 build dependencies and sqlite3 CLI
 # For Debian
 $ sudo apt-get install libsqlite3-dev sqlite
 ```
-Create SQLite database and set the environmental variable `DATABASE_URL`
+Set the environmental variable `DATABASE_URL`
 ```
-$ touch <db file path>
-$ export DATABASE_URL=file:<db file path>
+$ export DATABASE_URL="sqlite::<db file path>"
 ```
-Install `diesel_cli` and run database migrations
+Install `sqlx-cli` and run database migrations
 ```
-$ cargo install diesel_cli --no-default-features --features sqlite
-$ diesel migration run
+$ cargo install sqlx-cli --no-default-features --features sqlite
+$ sqlx database create
+$ sqlx migrate run
 ```
 Add some data to the database
 ```

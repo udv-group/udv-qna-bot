@@ -148,6 +148,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     teloxide::enable_logging!();
+    log::info!("Running db migrations...");
+    db::run_migrations().await?;
     log::info!("Starting bot...");
     run().await?;
     log::info!("Closing bot... Goodbye!");

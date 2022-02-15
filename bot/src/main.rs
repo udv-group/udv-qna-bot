@@ -37,6 +37,8 @@ pub enum State {
     Start,
     #[handler(handle_show_questions)]
     ShowQuestions(String),
+    #[handler(handle_blocked)]
+    Blocked,
 }
 
 impl Default for State {
@@ -93,8 +95,11 @@ async fn handle_show_questions(
                 .await?;
         }
         question => {
-            let question = db::get_question(conn.lock().await.borrow(), question).await?;
-            bot.send_message(msg.chat.id, question.answer)
+            let text = match db::get_question(conn.lock().await.borrow(), question).await {
+                Ok(question) => question.answer,
+                Err(_) => "Question does not exist".to_string(),
+            };
+            bot.send_message(msg.chat.id, text)
                 .reply_markup(make_questions(conn.lock().await.borrow(), category.as_str()).await?)
                 .await?;
         }
@@ -112,6 +117,7 @@ async fn handle_main_menu(
     dialogue
         .update(State::ShowQuestions(category.to_string()))
         .await?;
+    //FIXME: inform user about unknown category, if typed and not selected on keyboard
     bot.send_message(msg.chat.id, format!("You chose category {}", category))
         .reply_markup(make_questions(conn.lock().await.borrow(), category).await?)
         .await?;
@@ -119,12 +125,30 @@ async fn handle_main_menu(
 }
 
 async fn handle_my_chat_member(
+    bot: AutoSend<Bot>,
     msg: ChatMemberUpdated,
     storage: Arc<SqliteStorage<Json>>,
+    conn: Arc<Mutex<SqlitePool>>,
 ) -> anyhow::Result<()> {
-    if msg.new_chat_member.kind == ChatMemberKind::Left {
-        let dialogue: Dialogue<State, SqliteStorage<Json>> = Dialogue::new(storage, msg.chat.id);
-        dialogue.exit().await?;
+    let dialogue: Dialogue<State, SqliteStorage<Json>> = Dialogue::new(storage, msg.chat.id);
+    match msg.new_chat_member.kind {
+        ChatMemberKind::Banned(_) => {
+            log::info!(
+                "User {:?} has blocked the bot, deleting dialogue state",
+                msg.chat.username()
+            );
+            dialogue.exit().await?;
+        }
+        ChatMemberKind::Member => {
+            log::info!("New user {:?} connected", msg.from);
+            if db::get_user(conn.lock().await.borrow(), msg.from.id)
+                .await
+                .is_err()
+            {
+                dialogue.update(State::Blocked).await?;
+            }
+        }
+        kind => log::info!("Unsupported member kind{:?}", kind),
     }
     Ok(())
 }
@@ -138,6 +162,18 @@ async fn handle_commands(
 ) -> anyhow::Result<()> {
     match cmd {
         Command::Start => {
+            if db::get_user(conn.lock().await.borrow(), msg.from().unwrap().id)
+                .await
+                .is_err()
+            {
+                dialogue.update(State::Blocked).await?;
+                bot.send_message(
+                    msg.chat.id,
+                    "You are not authorized to use this bot, contact the admin for authentication",
+                )
+                .await?;
+                return Ok(());
+            }
             dialogue.reset().await?;
             bot.send_message(msg.chat.id, "Main menu")
                 .reply_markup(make_main_menu(conn.lock().await.borrow()).await?)
@@ -149,6 +185,15 @@ async fn handle_commands(
         }
     };
 
+    Ok(())
+}
+
+async fn handle_blocked(bot: AutoSend<Bot>, msg: Message) -> anyhow::Result<()> {
+    bot.send_message(
+        msg.chat.id,
+        "You are not authorized to use this bot, contact the admin for authentication",
+    )
+    .await?;
     Ok(())
 }
 

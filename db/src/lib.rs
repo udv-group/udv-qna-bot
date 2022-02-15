@@ -75,5 +75,17 @@ pub async fn get_question(pool: &SqlitePool, question: &str) -> sqlx::Result<Que
     .await
 }
 
+pub async fn get_user(pool: &SqlitePool, id: i64) -> sqlx::Result<User> {
+    sqlx::query_as!(
+        User,
+        r#"
+        SELECT * FROM users WHERE users.id = ?1
+        "#,
+        id
+    )
+    .fetch_one(pool)
+    .await
+}
+
 #[cfg(test)]
 mod tests {}

@@ -9,3 +9,10 @@ pub struct Question {
     pub question: String,
     pub answer: String,
 }
+
+pub struct User {
+    pub id: i64,
+    pub username: Option<String>,
+    pub first_name: String,
+    pub last_name: String,
+}

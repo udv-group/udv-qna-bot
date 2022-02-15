@@ -12,17 +12,17 @@ $ sudo apt-get install libsqlite3-dev sqlite
 ```
 Set the environmental variable `DATABASE_URL`
 ```
-$ export DATABASE_URL="sqlite::<db file path>"
+$ export DATABASE_URL="sqlite:<db file path>"
 ```
 Install `sqlx-cli` and run database migrations
 ```
-$ cargo install sqlx-cli --no-default-features --features sqlite
-$ sqlx database create
-$ sqlx migrate run
+$ cargo install sqlx-cli
+$ cd db
+$ sqlx database setup
 ```
 Add some data to the database
 ```
-$ sqlite <db file path>
+$ sqlite3 <db file path>
 sqlite> insert into categories(name) values("test1");
 sqlite> insert into categories(name) values("test2");
 sqlite> insert into questions(question, answer, category) values("funny question1", "funny an

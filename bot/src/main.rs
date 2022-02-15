@@ -123,14 +123,28 @@ async fn handle_main_menu(
     Ok(())
 }
 
+async fn handle_my_chat_member(
+    bot: AutoSend<Bot>,
+    msg: ChatMemberUpdated,
+    storage: Arc<SqliteStorage<Json>>,
+) -> anyhow::Result<()> {
+    let dialogue: Dialogue<State, SqliteStorage<Json>> = Dialogue::new(storage, msg.chat.id);
+    dialogue.exit().await;
+    Ok(())
+}
+
 async fn run() -> Result<(), Box<dyn Error>> {
     let conn = Arc::new(Mutex::new(db::establish_connection().await?));
     let bot = Bot::from_env().auto_send();
     let storage = SqliteStorage::open("db.sqlite", Json).await.unwrap();
 
-    let handler = Update::filter_message()
-        .enter_dialogue::<Message, SqliteStorage<Json>, State>()
-        .dispatch_by::<State>();
+    let handler = dptree::entry()
+        .branch(
+            Update::filter_message()
+                .enter_dialogue::<Message, SqliteStorage<Json>, State>()
+                .dispatch_by::<State>(),
+        )
+        .branch(Update::filter_my_chat_member().endpoint(handle_my_chat_member));
 
     Dispatcher::builder(bot, handler)
         .dependencies(dptree::deps![conn, storage])

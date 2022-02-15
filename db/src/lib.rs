@@ -7,11 +7,10 @@ extern crate dotenv;
 use crate::models::*;
 use dotenv::dotenv;
 use sqlx::Error;
-use std::env;
 
 pub async fn establish_connection() -> Result<SqlitePool, Error> {
     dotenv().ok();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let database_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL must be set");
     SqlitePool::connect(&database_url).await
 }
 

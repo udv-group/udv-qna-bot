@@ -14,13 +14,14 @@ use teloxide::{
 };
 
 use serde::{Deserialize, Serialize};
+use teloxide::types::ChatMemberKind;
 
 use tokio::sync::Mutex;
 
 type MyDialogue = Dialogue<State, SqliteStorage<Json>>;
 type StorageError = <SqliteStorage<Json> as Storage<State>>::Error;
 
-#[derive(BotCommand)]
+#[derive(BotCommand, Clone)]
 #[command(rename = "lowercase", description = "These commands are supported:")]
 enum Command {
     #[command(description = "Display this text")]
@@ -108,28 +109,46 @@ async fn handle_main_menu(
     conn: Arc<Mutex<SqlitePool>>,
 ) -> anyhow::Result<()> {
     let category = msg.text().unwrap();
-    if !category.starts_with('/') {
-        dialogue
-            .update(State::ShowQuestions(category.to_string()))
-            .await?;
-        bot.send_message(msg.chat.id, format!("You chose category {}", category))
-            .reply_markup(make_questions(conn.lock().await.borrow(), category).await?)
-            .await?;
-    } else {
-        bot.send_message(msg.chat.id, "Main menu")
-            .reply_markup(make_main_menu(conn.lock().await.borrow()).await?)
-            .await?;
-    }
+    dialogue
+        .update(State::ShowQuestions(category.to_string()))
+        .await?;
+    bot.send_message(msg.chat.id, format!("You chose category {}", category))
+        .reply_markup(make_questions(conn.lock().await.borrow(), category).await?)
+        .await?;
     Ok(())
 }
 
 async fn handle_my_chat_member(
-    bot: AutoSend<Bot>,
     msg: ChatMemberUpdated,
     storage: Arc<SqliteStorage<Json>>,
 ) -> anyhow::Result<()> {
-    let dialogue: Dialogue<State, SqliteStorage<Json>> = Dialogue::new(storage, msg.chat.id);
-    dialogue.exit().await;
+    if msg.new_chat_member.kind == ChatMemberKind::Left {
+        let dialogue: Dialogue<State, SqliteStorage<Json>> = Dialogue::new(storage, msg.chat.id);
+        dialogue.exit().await?;
+    }
+    Ok(())
+}
+
+async fn handle_commands(
+    bot: AutoSend<Bot>,
+    msg: Message,
+    cmd: Command,
+    dialogue: MyDialogue,
+    conn: Arc<Mutex<SqlitePool>>,
+) -> anyhow::Result<()> {
+    match cmd {
+        Command::Start => {
+            dialogue.reset().await?;
+            bot.send_message(msg.chat.id, "Main menu")
+                .reply_markup(make_main_menu(conn.lock().await.borrow()).await?)
+                .await?
+        }
+        Command::Help => {
+            bot.send_message(msg.chat.id, Command::descriptions())
+                .await?
+        }
+    };
+
     Ok(())
 }
 
@@ -141,8 +160,17 @@ async fn run() -> Result<(), Box<dyn Error>> {
     let handler = dptree::entry()
         .branch(
             Update::filter_message()
-                .enter_dialogue::<Message, SqliteStorage<Json>, State>()
-                .dispatch_by::<State>(),
+                .branch(
+                    dptree::entry()
+                        .enter_dialogue::<Message, SqliteStorage<Json>, State>()
+                        .filter_command::<Command>()
+                        .endpoint(handle_commands),
+                )
+                .branch(
+                    dptree::entry()
+                        .enter_dialogue::<Message, SqliteStorage<Json>, State>()
+                        .dispatch_by::<State>(),
+                ),
         )
         .branch(Update::filter_my_chat_member().endpoint(handle_my_chat_member));
 

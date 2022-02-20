@@ -14,5 +14,5 @@ pub struct User {
     pub id: i64,
     pub username: Option<String>,
     pub first_name: String,
-    pub last_name: String,
+    pub last_name: Option<String>,
 }

@@ -16,7 +16,6 @@ use serde::{Deserialize, Serialize};
 use teloxide::types::ChatMemberKind;
 
 use tokio::sync::Mutex;
-use tokio_stream::StreamExt;
 
 type MyDialogue = Dialogue<State, SqliteStorage<Json>>;
 type StorageError = <SqliteStorage<Json> as Storage<State>>::Error;

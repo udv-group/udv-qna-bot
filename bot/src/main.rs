@@ -3,16 +3,14 @@ mod private_chat;
 use std::error::Error;
 use std::sync::Arc;
 
+use teloxide::types::PublicChatKind;
 use teloxide::{
     dispatching2::dialogue::{serializer::Json, SqliteStorage},
     prelude2::*,
     types::ChatKind,
 };
 
-use teloxide::types::PublicChatKind;
-
 use tokio::sync::Mutex;
-use tokio_stream::StreamExt;
 
 async fn handle_group_chat(_bot: AutoSend<Bot>) -> anyhow::Result<()> {
     log::info!("GroupMessage");
@@ -22,10 +20,20 @@ async fn handle_group_chat(_bot: AutoSend<Bot>) -> anyhow::Result<()> {
 fn filter_group_chats(upd: Update) -> bool {
     upd.chat()
         .and_then(|chat| match &chat.kind {
-            ChatKind::Public(chat_) => match chat_.kind {
-                PublicChatKind::Group(_) => Some(()),
-                _ => None,
-            },
+            ChatKind::Public(public_chat) => Some(public_chat),
+            _ => None,
+        })
+        .and_then(|public_chat| match &public_chat.kind {
+            PublicChatKind::Group(_) => Some(()),
+            _ => None,
+        })
+        .is_some()
+}
+
+fn filter_private_chats(upd: Update) -> bool {
+    upd.chat()
+        .and_then(|chat| match &chat.kind {
+            ChatKind::Private(_) => Some(()),
             _ => None,
         })
         .is_some()
@@ -38,7 +46,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
 
     let handler = dptree::entry()
         .branch(dptree::filter(filter_group_chats).endpoint(handle_group_chat))
-        .branch(private_chat::make_private_chat_branch());
+        .branch(
+            dptree::filter(filter_private_chats).branch(private_chat::make_private_chat_branch()),
+        );
 
     Dispatcher::builder(bot, handler)
         .dependencies(dptree::deps![conn, storage])

@@ -5,3 +5,6 @@ members = [
     "cms",
     "db"
 ]
+
+[patch.crates-io]
+teloxide-core = { git = "https://github.com/teloxide/teloxide-core" }

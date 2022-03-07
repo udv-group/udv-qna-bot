@@ -15,6 +15,8 @@ use teloxide::{
 use serde::{Deserialize, Serialize};
 use teloxide::types::ChatMemberKind;
 
+use crate::auth;
+use teloxide_core::types::ChatKind;
 use tokio::sync::Mutex;
 
 type MyDialogue = Dialogue<State, SqliteStorage<Json>>;
@@ -47,7 +49,7 @@ impl Default for State {
 }
 
 async fn make_main_menu(conn: &SqlitePool) -> anyhow::Result<KeyboardMarkup> {
-    let results: Vec<String> = db::get_categories(conn)
+    let results: Vec<String> = db::categories::get_categories(conn)
         .await?
         .into_iter()
         .map(|category_| category_.name)
@@ -56,7 +58,7 @@ async fn make_main_menu(conn: &SqlitePool) -> anyhow::Result<KeyboardMarkup> {
 }
 
 async fn make_questions(conn: &SqlitePool, category: &str) -> anyhow::Result<KeyboardMarkup> {
-    let results: Vec<String> = db::get_questions_by_category(conn, category)
+    let results: Vec<String> = db::questions::get_questions_by_category(conn, category)
         .await?
         .into_iter()
         .map(|question| question.question)
@@ -99,7 +101,8 @@ async fn handle_show_questions(
                 .await?;
         }
         question => {
-            let text = match db::get_question(conn.lock().await.borrow(), question).await {
+            let text = match db::questions::get_question(conn.lock().await.borrow(), question).await
+            {
                 Ok(question) => question.answer,
                 Err(_) => "Question does not exist".to_string(),
             };
@@ -153,10 +156,7 @@ async fn handle_private_chat_member(
         }
         ChatMemberKind::Member => {
             log::info!("New user {:?} connected", msg.from);
-            if db::get_user(conn.lock().await.borrow(), msg.from.id)
-                .await
-                .is_err()
-            {
+            if !auth::auth_user(conn.lock().await.borrow(), msg.from.id).await {
                 dialogue.update(State::Blocked).await?;
             }
         }
@@ -174,10 +174,7 @@ async fn handle_commands(
 ) -> anyhow::Result<()> {
     match cmd {
         Command::Start => {
-            if db::get_user(conn.lock().await.borrow(), msg.from().unwrap().id)
-                .await
-                .is_err()
-            {
+            if !auth::auth_user(conn.lock().await.borrow(), msg.from().unwrap().id).await {
                 dialogue.update(State::Blocked).await?;
                 bot.send_message(
                     msg.chat.id,
@@ -226,4 +223,13 @@ pub fn make_private_chat_branch(
                 ),
         )
         .branch(Update::filter_my_chat_member().endpoint(handle_private_chat_member))
+}
+
+pub fn filter_private_chats(upd: Update) -> bool {
+    upd.chat()
+        .and_then(|chat| match &chat.kind {
+            ChatKind::Private(_) => Some(()),
+            _ => None,
+        })
+        .is_some()
 }

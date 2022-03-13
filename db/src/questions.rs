@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
+#[derive(Serialize, Deserialize)]
 pub struct Question {
     pub id: i64,
     pub category: Option<i64>,

@@ -9,3 +9,4 @@ edition = "2021"
 sqlx = { version = "0.5", features = [ "runtime-tokio-native-tls" , "sqlite", "migrate" ] }
 dotenv = "0.15"
 anyhow = "1.0"
+serde = "1"

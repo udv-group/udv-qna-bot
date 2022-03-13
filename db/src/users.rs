@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
+#[derive(Serialize, Deserialize)]
 pub struct User {
     pub id: i64,
     pub username: Option<String>,
@@ -50,7 +52,8 @@ pub async fn create_user(
 
     Ok(id)
 }
-pub async fn update_user(pool: &SqlitePool, user: User) -> anyhow::Result<()> {
+pub async fn update_user(pool: &SqlitePool, user: User) -> sqlx::Result<()> {
+    get_user(pool, user.id).await?;
     let mut conn = pool.acquire().await?;
 
     sqlx::query!(
@@ -61,6 +64,20 @@ pub async fn update_user(pool: &SqlitePool, user: User) -> anyhow::Result<()> {
         user.first_name,
         user.last_name,
         user.id
+    )
+    .execute(&mut conn)
+    .await?;
+    Ok(())
+}
+pub async fn delete_user(pool: &SqlitePool, user_id: i64) -> sqlx::Result<()> {
+    get_user(pool, user_id).await?;
+    let mut conn = pool.acquire().await?;
+
+    sqlx::query!(
+        r#"
+        DELETE FROM users WHERE users.id = ?1
+        "#,
+        user_id,
     )
     .execute(&mut conn)
     .await?;

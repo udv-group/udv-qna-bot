@@ -1,12 +1,22 @@
+mod categories;
+mod error_handlers;
+mod questions;
+mod users;
+
+use rocket::Build;
+
 #[macro_use]
 extern crate rocket;
 
-#[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
+async fn rocket() -> rocket::Rocket<Build> {
+    rocket::build()
+        .manage(db::establish_connection().await.unwrap())
+        .mount("/", users::routes())
 }
 
-#[launch]
-fn rocket() -> _ {
-    rocket::build().mount("/", routes![index])
+#[rocket::main]
+async fn main() {
+    if let Err(e) = rocket().await.launch().await {
+        drop(e);
+    }
 }

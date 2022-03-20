@@ -12,6 +12,8 @@ async fn rocket() -> rocket::Rocket<Build> {
     rocket::build()
         .manage(db::establish_connection().await.unwrap())
         .mount("/", users::routes())
+        .mount("/", questions::routes())
+        .mount("/", categories::routes())
 }
 
 #[rocket::main]

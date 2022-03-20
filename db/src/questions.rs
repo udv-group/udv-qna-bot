@@ -50,7 +50,7 @@ pub async fn create_question(
     question: &str,
     answer: &str,
     category: Option<i64>,
-) -> anyhow::Result<i64> {
+) -> sqlx::Result<i64> {
     let mut conn = pool.acquire().await?;
 
     let id = sqlx::query!(
@@ -68,7 +68,7 @@ INSERT INTO questions (category, question, answer) VALUES (?1, ?2, ?3)
     Ok(id)
 }
 
-pub async fn update_question(pool: &SqlitePool, question: Question) -> anyhow::Result<()> {
+pub async fn update_question(pool: &SqlitePool, question: Question) -> sqlx::Result<()> {
     let mut conn = pool.acquire().await?;
 
     sqlx::query!(
@@ -79,6 +79,20 @@ pub async fn update_question(pool: &SqlitePool, question: Question) -> anyhow::R
         question.question,
         question.answer,
         question.id
+    )
+    .execute(&mut conn)
+    .await?;
+    Ok(())
+}
+
+pub async fn delete_question(pool: &SqlitePool, question_id: i64) -> sqlx::Result<()> {
+    let mut conn = pool.acquire().await?;
+
+    sqlx::query!(
+        r#"
+        DELETE FROM questions WHERE questions.id = ?1
+        "#,
+        question_id,
     )
     .execute(&mut conn)
     .await?;

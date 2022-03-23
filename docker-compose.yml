@@ -1,0 +1,12 @@
+version: "3.9"
+services:
+  bot:
+    container_name: bot
+    build:
+      context: .
+      dockerfile: ./bot/Dockerfile
+    volumes:
+      - ${DB_DIR:-./database}:/data
+    environment:
+       DATABASE_URL: sqlite:/data/bot.db
+       TELOXIDE_TOKEN: ${TELOXIDE_TOKEN}

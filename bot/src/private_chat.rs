@@ -13,10 +13,9 @@ use teloxide::{
 };
 
 use serde::{Deserialize, Serialize};
-use teloxide::types::ChatMemberKind;
+use teloxide::types::{ChatKind, ChatMemberKind};
 
 use crate::auth;
-use teloxide_core::types::ChatKind;
 use tokio::sync::Mutex;
 
 type MyDialogue = Dialogue<State, SqliteStorage<Json>>;

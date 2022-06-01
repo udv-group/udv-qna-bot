@@ -3,5 +3,6 @@
 members = [
     "bot",
     "cms",
-    "db"
+    "db",
+    "cli"
 ]

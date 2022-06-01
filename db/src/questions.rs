@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
+use std::collections::HashSet;
 
 #[derive(Serialize, Deserialize)]
 pub struct Question {
@@ -96,5 +97,28 @@ pub async fn delete_question(pool: &SqlitePool, question_id: i64) -> sqlx::Resul
     )
     .execute(&mut conn)
     .await?;
+    Ok(())
+}
+
+pub async fn import_questions(pool: &SqlitePool, questions: Vec<Question>) -> sqlx::Result<()> {
+    let existing_questions = get_questions(pool).await?;
+    let existing_questions_ids: HashSet<i64> = existing_questions.iter().map(|q| q.id).collect();
+    let new_questions_ids: HashSet<i64> = questions.iter().map(|q| q.id).collect();
+    for question_id in existing_questions_ids.difference(&new_questions_ids) {
+        delete_question(pool, *question_id).await?;
+    }
+    for question in questions {
+        if existing_questions_ids.contains(&question.id) {
+            update_question(pool, question).await?;
+        } else {
+            create_question(
+                pool,
+                question.question.as_str(),
+                question.answer.as_str(),
+                question.category,
+            )
+            .await?;
+        }
+    }
     Ok(())
 }

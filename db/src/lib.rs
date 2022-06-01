@@ -1,8 +1,11 @@
 pub mod categories;
 pub mod questions;
 pub mod users;
-
 use sqlx::sqlite::SqlitePool;
+
+pub use categories::Category;
+pub use questions::Question;
+pub use users::User;
 
 extern crate dotenv;
 

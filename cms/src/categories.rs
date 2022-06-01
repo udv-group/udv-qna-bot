@@ -21,8 +21,8 @@ async fn create_category(
     pool: &State<SqlitePool>,
 ) -> JsonResult<Category> {
     let category = category.into_inner();
-    db::categories::create_category(pool, category.name.as_str()).await?;
-    let new_category = db::categories::get_category(pool, category.category.as_str()).await?;
+    let category_id = db::categories::create_category(pool, category.name.as_str()).await?;
+    let new_category = db::categories::get_category(pool, category_id).await?;
     Ok(Json(new_category))
 }
 #[patch("/categories", format = "json", data = "<category>")]

@@ -1,7 +1,8 @@
+mod auth;
 mod group_chat;
 mod private_chat;
-mod auth;
 
+use cms;
 use std::error::Error;
 use std::sync::Arc;
 
@@ -40,8 +41,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn start_bot() -> Result<(), Box<dyn Error>> {
     teloxide::enable_logging!();
     log::info!("Running db migrations...");
     db::run_migrations().await?;
@@ -49,4 +49,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     run().await?;
     log::info!("Closing bot... Goodbye!");
     Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    tokio::spawn(async move { if let Err(e) = cms::rocket().await.launch().await {
+        drop(e);
+    } });
+    start_bot().await
 }

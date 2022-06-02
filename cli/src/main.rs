@@ -1,12 +1,15 @@
 use clap::{Parser, Subcommand};
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+use sqlx::SqlitePool;
 use std::error::Error;
 use std::path::PathBuf;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Cli {
+    /// Database path
+    db_path: PathBuf,
     #[clap(subcommand)]
     command: Commands,
 }
@@ -22,9 +25,13 @@ enum Commands {
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
+    let db_path: PathBuf = cli.db_path;
+    let pool = SqlitePool::connect(format!("sqlite:{}", db_path.display()).as_str())
+        .await
+        .expect("Cannot connect to DB");
     match cli.command {
-        Commands::Export { path } => export_data(path).await.expect("Cannot export"),
-        Commands::Import { path } => import_data(path).await.expect("Cannot import"),
+        Commands::Export { path } => export_data(&pool, path).await.expect("Cannot export"),
+        Commands::Import { path } => import_data(&pool, path).await.expect("Cannot import"),
     }
 }
 
@@ -47,10 +54,7 @@ fn read_from<T: DeserializeOwned>(path: PathBuf) -> Result<Vec<T>, Box<dyn Error
     }
     Ok(out)
 }
-async fn export_data(path: PathBuf) -> Result<(), Box<dyn Error>> {
-    let pool = db::establish_connection()
-        .await
-        .expect("Unable to connect to database");
+async fn export_data(pool: &SqlitePool, path: PathBuf) -> Result<(), Box<dyn Error>> {
     let categories = db::categories::get_categories(&pool).await?;
     let questions = db::questions::get_questions(&pool).await?;
     let users = db::users::get_users(&pool).await?;
@@ -63,11 +67,7 @@ async fn export_data(path: PathBuf) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn import_data(path: PathBuf) -> Result<(), Box<dyn Error>> {
-    let pool = db::establish_connection()
-        .await
-        .expect("Unable to connect to database");
-
+async fn import_data(pool: &SqlitePool, path: PathBuf) -> Result<(), Box<dyn Error>> {
     let categories: Vec<db::Category> = read_from(path.clone().join("categories.csv"))?;
     let questions: Vec<db::Question> = read_from(path.clone().join("question.csv"))?;
     let users: Vec<db::User> = read_from(path.clone().join("users.csv"))?;

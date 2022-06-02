@@ -2,7 +2,6 @@ mod auth;
 mod group_chat;
 mod private_chat;
 
-use cms;
 use std::error::Error;
 use std::sync::Arc;
 
@@ -53,8 +52,5 @@ async fn start_bot() -> Result<(), Box<dyn Error>> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    tokio::spawn(async move { if let Err(e) = cms::rocket().await.launch().await {
-        drop(e);
-    } });
     start_bot().await
 }

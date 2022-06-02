@@ -2,6 +2,7 @@ version: "3.9"
 services:
   bot:
     container_name: bot
+    image: udv-qna-bot:latest
     build:
       context: .
       dockerfile: ./bot/Dockerfile
@@ -10,3 +11,16 @@ services:
     environment:
        DATABASE_URL: sqlite:/data/bot.db
        TELOXIDE_TOKEN: ${TELOXIDE_TOKEN}
+       USE_AUTH: ${USE_AUTH:-true}
+  cms:
+    container_name: cms
+    image: udv-qna-cms:latest
+    build:
+      context: .
+      dockerfile: ./cms/Dockerfile
+    volumes:
+      - ${DB_DIR:-./database}:/data
+    environment:
+       DATABASE_URL: sqlite:/data/bot.db
+    ports:
+      - "8080:8000"

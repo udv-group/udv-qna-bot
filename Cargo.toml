@@ -3,6 +3,6 @@
 members = [
     "bot",
     "cms",
-    "db",
-    "cli"
+    "db"
 ]
+exclude = ["cli"]

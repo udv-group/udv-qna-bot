@@ -1,8 +1,8 @@
 use crate::dptree;
 use teloxide::adaptors::AutoSend;
-use teloxide::prelude2::*;
 use teloxide::types::{ChatKind, PublicChatKind, Update};
 use teloxide::Bot;
+use teloxide::{dispatching::DpHandlerDescription, prelude::*};
 
 pub async fn handle_group_chat(_bot: AutoSend<Bot>) -> anyhow::Result<()> {
     log::info!("GroupMessage");
@@ -22,7 +22,7 @@ pub fn filter_group_chats(upd: Update) -> bool {
         .is_some()
 }
 
-pub fn make_group_chat_branch() -> Handler<'static, DependencyMap, anyhow::Result<()>, DependencyMap>
-{
+pub fn make_group_chat_branch(
+) -> Handler<'static, DependencyMap, anyhow::Result<()>, DpHandlerDescription> {
     dptree::entry().branch(Update::filter_my_chat_member().endpoint(handle_group_chat))
 }

@@ -7,15 +7,15 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use dotenv;
+use pretty_env_logger;
 use teloxide::{
-    dispatching2::dialogue::{serializer::Json, SqliteStorage},
-    prelude2::*,
+    dispatching::dialogue::{serializer::Json, SqliteStorage},
+    prelude::*,
 };
 
 use tokio::sync::Mutex;
 
 async fn run() -> Result<(), Box<dyn Error>> {
-    dotenv::dotenv().ok();
     dotenv::var("USE_AUTH")
         .expect("Variable USE_AUTH should be set")
         .parse::<bool>()
@@ -25,9 +25,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     if !static_dir.is_dir() {
         panic!("Variable STATIC_DIT should contain valid path");
     }
-    let conn = Arc::new(Mutex::new(db::establish_connection().await?));
+    let path = dotenv::var("DB_PATH").expect("DB_PATH must be set");
+    let conn = Arc::new(Mutex::new(db::establish_connection(&path).await?));
     let bot = Bot::from_env().auto_send();
-    let storage = SqliteStorage::open("db.sqlite", Json).await.unwrap();
+    let storage = SqliteStorage::open(&path, Json).await.unwrap();
 
     let handler = dptree::entry()
         .branch(
@@ -53,7 +54,12 @@ async fn run() -> Result<(), Box<dyn Error>> {
 }
 
 async fn start_bot() -> Result<(), Box<dyn Error>> {
-    teloxide::enable_logging!();
+    dotenv::dotenv().ok();
+    pretty_env_logger::formatted_builder()
+        .write_style(pretty_env_logger::env_logger::WriteStyle::Auto)
+        .filter(Some("bot"), log::LevelFilter::Trace)
+        .filter(Some("teloxide"), log::LevelFilter::Info)
+        .init();
     log::info!("Running db migrations...");
     db::run_migrations().await?;
     log::info!("Starting bot...");

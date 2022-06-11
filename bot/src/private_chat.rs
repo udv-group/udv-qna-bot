@@ -5,12 +5,11 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use teloxide::{
-    dispatching2::dialogue::{serializer::Json, SqliteStorage, Storage},
-    macros::DialogueState,
-    payloads::SendMessageSetters,
-    prelude2::*,
+    dispatching::dialogue::{serializer::Json, SqliteStorage},
+    dispatching::DpHandlerDescription,
+    prelude::*,
     types::{InputFile, KeyboardButton, KeyboardMarkup},
-    utils::command::BotCommand,
+    utils::command::BotCommands,
 };
 
 use serde::{Deserialize, Serialize};
@@ -20,9 +19,8 @@ use crate::auth;
 use tokio::sync::Mutex;
 
 type MyDialogue = Dialogue<State, SqliteStorage<Json>>;
-type StorageError = <SqliteStorage<Json> as Storage<State>>::Error;
 
-#[derive(BotCommand, Clone)]
+#[derive(BotCommands, Clone)]
 #[command(rename = "lowercase", description = "These commands are supported:")]
 enum Command {
     #[command(description = "Display this text")]
@@ -31,20 +29,16 @@ enum Command {
     Start,
 }
 
-#[derive(DialogueState, Clone, Serialize, Deserialize)]
-#[handler_out(anyhow::Result<()>)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum State {
-    #[handler(on_category_select)]
-    Start,
-    #[handler(on_question_select)]
-    ShowingQuestions(String),
-    #[handler(handle_blocked)]
+    ShowingCategories,
+    ShowingQuestions { category: String },
     Blocked,
 }
 
 impl Default for State {
     fn default() -> Self {
-        Self::Start
+        Self::ShowingCategories
     }
 }
 
@@ -135,7 +129,9 @@ async fn on_category_select(
 ) -> anyhow::Result<()> {
     let category = msg.text().unwrap_or("unknown");
     dialogue
-        .update(State::ShowingQuestions(category.to_string()))
+        .update(State::ShowingQuestions {
+            category: category.to_string(),
+        })
         .await?;
     match make_questions(conn.lock().await.borrow(), category).await {
         Ok(keyboard) => {
@@ -169,7 +165,7 @@ async fn handle_private_chat_member(
         }
         ChatMemberKind::Member => {
             log::info!("New user {:?} connected", msg.from);
-            if !auth::auth_user(conn.lock().await.borrow(), msg.from.id).await {
+            if !auth::auth_user(conn.lock().await.borrow(), msg.from.id.0).await {
                 dialogue.update(State::Blocked).await?;
             }
         }
@@ -187,7 +183,7 @@ async fn handle_commands(
 ) -> anyhow::Result<()> {
     match cmd {
         Command::Start => {
-            if !auth::auth_user(conn.lock().await.borrow(), msg.from().unwrap().id).await {
+            if !auth::auth_user(conn.lock().await.borrow(), msg.from().unwrap().id.0).await {
                 dialogue.update(State::Blocked).await?;
                 handle_blocked(bot, msg).await?;
                 return Ok(());
@@ -198,7 +194,7 @@ async fn handle_commands(
                 .await?
         }
         Command::Help => {
-            bot.send_message(msg.chat.id, Command::descriptions())
+            bot.send_message(msg.chat.id, Command::descriptions().to_string())
                 .await?
         }
     };
@@ -216,23 +212,25 @@ async fn handle_blocked(bot: AutoSend<Bot>, msg: Message) -> anyhow::Result<()> 
 }
 
 pub fn make_private_chat_branch(
-) -> Handler<'static, DependencyMap, anyhow::Result<()>, DependencyMap> {
-    dptree::entry()
-        .branch(
-            Update::filter_message()
-                .branch(
-                    dptree::entry()
-                        .enter_dialogue::<Message, SqliteStorage<Json>, State>()
-                        .filter_command::<Command>()
-                        .endpoint(handle_commands),
-                )
-                .branch(
-                    dptree::entry()
-                        .enter_dialogue::<Message, SqliteStorage<Json>, State>()
-                        .dispatch_by::<State>(),
-                ),
-        )
-        .branch(Update::filter_my_chat_member().endpoint(handle_private_chat_member))
+) -> Handler<'static, DependencyMap, anyhow::Result<()>, DpHandlerDescription> {
+    let commands_handler = dptree::entry()
+        .enter_dialogue::<Message, SqliteStorage<Json>, State>()
+        .filter_command::<Command>()
+        .endpoint(handle_commands);
+
+    let dialogues_handler = dptree::entry()
+        .enter_dialogue::<Message, SqliteStorage<Json>, State>()
+        .branch(dptree::case![State::ShowingCategories].endpoint(on_category_select))
+        .branch(dptree::case![State::ShowingQuestions { category }].endpoint(on_question_select))
+        .branch(dptree::case![State::Blocked].endpoint(handle_blocked));
+
+    let messages_handler = Update::filter_message()
+        .branch(commands_handler)
+        .branch(dialogues_handler);
+
+    return dptree::entry()
+        .branch(messages_handler)
+        .branch(Update::filter_my_chat_member().endpoint(handle_private_chat_member));
 }
 
 pub fn filter_private_chats(upd: Update) -> bool {

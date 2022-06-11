@@ -9,6 +9,7 @@ struct NewQuestion {
     category: Option<i64>,
     question: String,
     answer: String,
+    attachment: Option<String>,
 }
 
 #[get("/questions")]
@@ -28,6 +29,7 @@ async fn create_question(
         question.question.as_str(),
         question.answer.as_str(),
         question.category,
+        question.attachment.as_deref(),
     )
     .await?;
     let new_question = db::questions::get_question(pool, question.question.as_str()).await?;

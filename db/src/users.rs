@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
+use std::collections::HashSet;
 
 #[derive(Serialize, Deserialize)]
 pub struct User {
@@ -81,5 +82,28 @@ pub async fn delete_user(pool: &SqlitePool, user_id: i64) -> sqlx::Result<()> {
     )
     .execute(&mut conn)
     .await?;
+    Ok(())
+}
+
+pub async fn import_users(pool: &SqlitePool, users: Vec<User>) -> sqlx::Result<()> {
+    let existing_users = get_users(pool).await?;
+    let existing_users_ids: HashSet<i64> = existing_users.iter().map(|c| c.id).collect();
+    let new_users_ids: HashSet<i64> = users.iter().map(|c| c.id).collect();
+    for user_id in existing_users_ids.difference(&new_users_ids) {
+        delete_user(pool, *user_id).await?;
+    }
+    for user in users {
+        if existing_users_ids.contains(&user.id) {
+            update_user(pool, user).await?;
+        } else {
+            create_user(
+                pool,
+                user.username.unwrap_or_else(|| "".to_string()),
+                user.first_name,
+                user.last_name,
+            )
+            .await?;
+        }
+    }
     Ok(())
 }

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
+use std::collections::HashSet;
 
 #[derive(Serialize, Deserialize)]
 pub struct Category {
@@ -74,5 +75,22 @@ pub async fn delete_category(pool: &SqlitePool, category_id: i64) -> sqlx::Resul
     )
     .execute(&mut conn)
     .await?;
+    Ok(())
+}
+
+pub async fn import_categories(pool: &SqlitePool, categories: Vec<Category>) -> sqlx::Result<()> {
+    let existing_categories = get_categories(pool).await?;
+    let existing_categories_ids: HashSet<i64> = existing_categories.iter().map(|c| c.id).collect();
+    let new_categories_ids: HashSet<i64> = categories.iter().map(|c| c.id).collect();
+    for category_id in existing_categories_ids.difference(&new_categories_ids) {
+        delete_category(pool, *category_id).await?;
+    }
+    for category in categories {
+        if existing_categories_ids.contains(&category.id) {
+            update_category(pool, category).await?;
+        } else {
+            create_category(pool, category.name.as_str()).await?;
+        }
+    }
     Ok(())
 }

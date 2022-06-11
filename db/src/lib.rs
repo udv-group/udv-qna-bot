@@ -7,15 +7,13 @@ pub use categories::Category;
 pub use questions::Question;
 pub use users::User;
 
-extern crate dotenv;
-
-use dotenv::dotenv;
 use sqlx::Error;
 
 pub async fn establish_connection() -> Result<SqlitePool, Error> {
-    dotenv().ok();
-    let database_url = dotenv::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqlitePool::connect(&database_url).await
+    dotenv::dotenv().ok();
+    let path = dotenv::var("DB_PATH").expect("DB_PATH must be set");
+
+    SqlitePool::connect(format!("sqlite:{}", path).as_str()).await
 }
 
 pub async fn run_migrations() -> Result<(), Error> {

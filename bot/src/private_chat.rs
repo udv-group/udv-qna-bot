@@ -1,6 +1,7 @@
 use sqlx::SqlitePool;
 use std::borrow::Borrow;
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use teloxide::{
@@ -8,7 +9,7 @@ use teloxide::{
     macros::DialogueState,
     payloads::SendMessageSetters,
     prelude2::*,
-    types::{KeyboardButton, KeyboardMarkup},
+    types::{InputFile, KeyboardButton, KeyboardMarkup},
     utils::command::BotCommand,
 };
 
@@ -33,10 +34,10 @@ enum Command {
 #[derive(DialogueState, Clone, Serialize, Deserialize)]
 #[handler_out(anyhow::Result<()>)]
 pub enum State {
-    #[handler(handle_main_menu)]
+    #[handler(on_category_select)]
     Start,
-    #[handler(handle_show_questions)]
-    ShowQuestions(String),
+    #[handler(on_question_select)]
+    ShowingQuestions(String),
     #[handler(handle_blocked)]
     Blocked,
 }
@@ -84,12 +85,13 @@ fn make_keyboard(
     Ok(KeyboardMarkup::new(keyboard))
 }
 
-async fn handle_show_questions(
+async fn on_question_select(
     bot: AutoSend<Bot>,
     msg: Message,
     dialogue: MyDialogue,
     category: String,
     conn: Arc<Mutex<SqlitePool>>,
+    static_dir: Arc<PathBuf>,
 ) -> anyhow::Result<()> {
     let text = msg.text().unwrap_or("unknown");
     match text {
@@ -99,21 +101,33 @@ async fn handle_show_questions(
                 .reply_markup(make_main_menu(conn.lock().await.borrow()).await?)
                 .await?;
         }
-        question => {
-            let text = match db::questions::get_question(conn.lock().await.borrow(), question).await
+        selected_question => {
+            if let Ok(question) =
+                db::questions::get_question(conn.lock().await.borrow(), selected_question).await
             {
-                Ok(question) => question.answer,
-                Err(_) => "Question does not exist".to_string(),
-            };
-            bot.send_message(msg.chat.id, text)
-                .reply_markup(make_questions(conn.lock().await.borrow(), category.as_str()).await?)
-                .await?;
+                bot.send_message(msg.chat.id, question.answer).await?;
+                if let Some(att) = question.attachment {
+                    let filepath = static_dir.join(att);
+                    if filepath.is_file() {
+                        bot.send_document(msg.chat.id, InputFile::file(filepath))
+                            .await?;
+                    } else {
+                        log::error!("File {:#?} is not found!", filepath);
+                    }
+                }
+            } else {
+                bot.send_message(msg.chat.id, "Question does not exist".to_string())
+                    .reply_markup(
+                        make_questions(conn.lock().await.borrow(), category.as_str()).await?,
+                    )
+                    .await?;
+            }
         }
     }
     Ok(())
 }
 
-async fn handle_main_menu(
+async fn on_category_select(
     bot: AutoSend<Bot>,
     msg: Message,
     dialogue: MyDialogue,
@@ -121,7 +135,7 @@ async fn handle_main_menu(
 ) -> anyhow::Result<()> {
     let category = msg.text().unwrap_or("unknown");
     dialogue
-        .update(State::ShowQuestions(category.to_string()))
+        .update(State::ShowingQuestions(category.to_string()))
         .await?;
     match make_questions(conn.lock().await.borrow(), category).await {
         Ok(keyboard) => {
@@ -175,11 +189,7 @@ async fn handle_commands(
         Command::Start => {
             if !auth::auth_user(conn.lock().await.borrow(), msg.from().unwrap().id).await {
                 dialogue.update(State::Blocked).await?;
-                bot.send_message(
-                    msg.chat.id,
-                    "You are not authorized to use this bot, contact the admin for authentication",
-                )
-                .await?;
+                handle_blocked(bot, msg).await?;
                 return Ok(());
             }
             dialogue.reset().await?;
@@ -204,6 +214,7 @@ async fn handle_blocked(bot: AutoSend<Bot>, msg: Message) -> anyhow::Result<()> 
     .await?;
     Ok(())
 }
+
 pub fn make_private_chat_branch(
 ) -> Handler<'static, DependencyMap, anyhow::Result<()>, DependencyMap> {
     dptree::entry()

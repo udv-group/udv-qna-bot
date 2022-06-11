@@ -7,11 +7,13 @@ services:
       context: .
       dockerfile: ./bot/Dockerfile
     volumes:
-      - ${DB_DIR:-./database}:/data
+      - ${DB_PATH:-./database/bot.db}:/data/bot.db
+      - ${STATIC_DIR:-./static}:/static
     environment:
-       DATABASE_URL: sqlite:/data/bot.db
+       DB_PATH: /data/bot.db
        TELOXIDE_TOKEN: ${TELOXIDE_TOKEN}
        USE_AUTH: ${USE_AUTH:-true}
+       STATIC_DIR: /static
   cms:
     container_name: cms
     image: udv-qna-cms:latest
@@ -19,8 +21,10 @@ services:
       context: .
       dockerfile: ./cms/Dockerfile
     volumes:
-      - ${DB_DIR:-./database}:/data
+      - ${DB_PATH:-./database/bot.db}:/data/bot.db
+      - ${STATIC_DIR:-./static}:/static
     environment:
-       DATABASE_URL: sqlite:/data/bot.db
+       DB_PATH: /data/bot.db
+       STATIC_DIR: /static
     ports:
       - "8080:8000"

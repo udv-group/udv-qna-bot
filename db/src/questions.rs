@@ -8,6 +8,7 @@ pub struct Question {
     pub category: Option<i64>,
     pub question: String,
     pub answer: String,
+    pub attachment: Option<String>,
 }
 
 pub async fn get_questions_by_category(
@@ -17,7 +18,7 @@ pub async fn get_questions_by_category(
     sqlx::query_as!(
         Question,
         r#"
-        SELECT questions.id, questions.category, questions.question, questions.answer FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1
+        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachment FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1
         "#,
         category
     ).fetch_all(pool).await
@@ -51,16 +52,18 @@ pub async fn create_question(
     question: &str,
     answer: &str,
     category: Option<i64>,
+    attachment: Option<&str>,
 ) -> sqlx::Result<i64> {
     let mut conn = pool.acquire().await?;
 
     let id = sqlx::query!(
         r#"
-INSERT INTO questions (category, question, answer) VALUES (?1, ?2, ?3)
+INSERT INTO questions (category, question, answer, attachment) VALUES (?1, ?2, ?3, ?4)
         "#,
         category,
         question,
-        answer
+        answer,
+        attachment
     )
     .execute(&mut conn)
     .await?
@@ -74,11 +77,12 @@ pub async fn update_question(pool: &SqlitePool, question: Question) -> sqlx::Res
 
     sqlx::query!(
         r#"
-        UPDATE questions SET category=?1, question=?2, answer=?3 WHERE questions.id = ?4
+        UPDATE questions SET category=?1, question=?2, answer=?3, attachment=?4 WHERE questions.id = ?5
         "#,
         question.category,
         question.question,
         question.answer,
+        question.attachment,
         question.id
     )
     .execute(&mut conn)
@@ -116,6 +120,7 @@ pub async fn import_questions(pool: &SqlitePool, questions: Vec<Question>) -> sq
                 question.question.as_str(),
                 question.answer.as_str(),
                 question.category,
+                question.attachment.as_deref(),
             )
             .await?;
         }

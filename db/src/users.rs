@@ -98,7 +98,7 @@ pub async fn import_users(pool: &SqlitePool, users: Vec<User>) -> sqlx::Result<(
         } else {
             create_user(
                 pool,
-                user.username.unwrap_or("".to_string()),
+                user.username.unwrap_or_else(|| "".to_string()),
                 user.first_name,
                 user.last_name,
             )

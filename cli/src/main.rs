@@ -61,9 +61,9 @@ async fn export_data(pool: &SqlitePool, path: PathBuf) -> Result<(), Box<dyn Err
     if !path.exists() {
         std::fs::create_dir_all(&path)?
     }
-    write_to(path.clone().join("categories.csv"), categories)?;
-    write_to(path.clone().join("question.csv"), questions)?;
-    write_to(path.clone().join("users.csv"), users)?;
+    write_to(path.join("categories.csv"), categories)?;
+    write_to(path.join("question.csv"), questions)?;
+    write_to(path.join("users.csv"), users)?;
     Ok(())
 }
 

@@ -3,8 +3,10 @@ mod group_chat;
 mod private_chat;
 
 use std::error::Error;
+use std::path::PathBuf;
 use std::sync::Arc;
 
+use dotenv;
 use teloxide::{
     dispatching2::dialogue::{serializer::Json, SqliteStorage},
     prelude2::*,
@@ -13,6 +15,16 @@ use teloxide::{
 use tokio::sync::Mutex;
 
 async fn run() -> Result<(), Box<dyn Error>> {
+    dotenv::dotenv().ok();
+    dotenv::var("USE_AUTH")
+        .expect("Variable USE_AUTH should be set")
+        .parse::<bool>()
+        .expect("Should be 'true' or 'false'");
+    let static_dir =
+        PathBuf::from(dotenv::var("STATIC_DIR").expect("Variable STATIC_DIR should be set"));
+    if !static_dir.is_dir() {
+        panic!("Variable STATIC_DIT should contain valid path");
+    }
     let conn = Arc::new(Mutex::new(db::establish_connection().await?));
     let bot = Bot::from_env().auto_send();
     let storage = SqliteStorage::open("db.sqlite", Json).await.unwrap();
@@ -28,7 +40,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
         );
 
     Dispatcher::builder(bot, handler)
-        .dependencies(dptree::deps![conn, storage])
+        .dependencies(dptree::deps![conn, storage, Arc::new(static_dir)])
         .default_handler(|upd| async move {
             dbg!(upd);
         })

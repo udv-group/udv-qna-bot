@@ -16,7 +16,6 @@ use serde::{Deserialize, Serialize};
 use teloxide::types::{ChatKind, ChatMemberKind};
 
 use crate::auth;
-use tokio::sync::Mutex;
 
 type MyDialogue = Dialogue<State, SqliteStorage<Json>>;
 
@@ -84,7 +83,7 @@ async fn on_question_select(
     msg: Message,
     dialogue: MyDialogue,
     category: String,
-    conn: Arc<Mutex<SqlitePool>>,
+    conn: Arc<SqlitePool>,
     static_dir: Arc<PathBuf>,
 ) -> anyhow::Result<()> {
     let text = msg.text().unwrap_or("unknown");
@@ -92,12 +91,12 @@ async fn on_question_select(
         "Go Back" => {
             dialogue.reset().await?;
             bot.send_message(msg.chat.id, "Main menu")
-                .reply_markup(make_main_menu(conn.lock().await.borrow()).await?)
+                .reply_markup(make_main_menu(conn.borrow()).await?)
                 .await?;
         }
         selected_question => {
             if let Ok(question) =
-                db::questions::get_question(conn.lock().await.borrow(), selected_question).await
+                db::questions::get_question(conn.borrow(), selected_question).await
             {
                 bot.send_message(msg.chat.id, question.answer).await?;
                 if let Some(att) = question.attachment {
@@ -111,9 +110,7 @@ async fn on_question_select(
                 }
             } else {
                 bot.send_message(msg.chat.id, "Question does not exist".to_string())
-                    .reply_markup(
-                        make_questions(conn.lock().await.borrow(), category.as_str()).await?,
-                    )
+                    .reply_markup(make_questions(conn.borrow(), category.as_str()).await?)
                     .await?;
             }
         }
@@ -125,7 +122,7 @@ async fn on_category_select(
     bot: AutoSend<Bot>,
     msg: Message,
     dialogue: MyDialogue,
-    conn: Arc<Mutex<SqlitePool>>,
+    conn: Arc<SqlitePool>,
 ) -> anyhow::Result<()> {
     let category = msg.text().unwrap_or("unknown");
     dialogue
@@ -133,7 +130,7 @@ async fn on_category_select(
             category: category.to_string(),
         })
         .await?;
-    match make_questions(conn.lock().await.borrow(), category).await {
+    match make_questions(conn.borrow(), category).await {
         Ok(keyboard) => {
             bot.send_message(msg.chat.id, format!("You chose category {}", category))
                 .reply_markup(keyboard)
@@ -152,7 +149,7 @@ async fn handle_private_chat_member(
     _bot: AutoSend<Bot>,
     msg: ChatMemberUpdated,
     storage: Arc<SqliteStorage<Json>>,
-    conn: Arc<Mutex<SqlitePool>>,
+    conn: Arc<SqlitePool>,
 ) -> anyhow::Result<()> {
     let dialogue: Dialogue<State, SqliteStorage<Json>> = Dialogue::new(storage, msg.chat.id);
     match msg.new_chat_member.kind {
@@ -165,7 +162,7 @@ async fn handle_private_chat_member(
         }
         ChatMemberKind::Member => {
             log::info!("New user {:?} connected", msg.from);
-            if !auth::auth_user(conn.lock().await.borrow(), msg.from.id.0).await {
+            if !auth::auth_user(conn.borrow(), msg.from.id.0).await {
                 dialogue.update(State::Blocked).await?;
             }
         }
@@ -179,18 +176,18 @@ async fn handle_commands(
     msg: Message,
     cmd: Command,
     dialogue: MyDialogue,
-    conn: Arc<Mutex<SqlitePool>>,
+    conn: Arc<SqlitePool>,
 ) -> anyhow::Result<()> {
     match cmd {
         Command::Start => {
-            if !auth::auth_user(conn.lock().await.borrow(), msg.from().unwrap().id.0).await {
+            if !auth::auth_user(conn.borrow(), msg.from().unwrap().id.0).await {
                 dialogue.update(State::Blocked).await?;
                 handle_blocked(bot, msg).await?;
                 return Ok(());
             }
             dialogue.reset().await?;
             bot.send_message(msg.chat.id, "Main menu")
-                .reply_markup(make_main_menu(conn.lock().await.borrow()).await?)
+                .reply_markup(make_main_menu(conn.borrow()).await?)
                 .await?
         }
         Command::Help => {

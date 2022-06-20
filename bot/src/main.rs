@@ -13,8 +13,6 @@ use teloxide::{
     prelude::*,
 };
 
-use tokio::sync::Mutex;
-
 async fn run() -> Result<(), Box<dyn Error>> {
     dotenv::var("USE_AUTH")
         .expect("Variable USE_AUTH should be set")
@@ -26,7 +24,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
         panic!("Variable STATIC_DIT should contain valid path");
     }
     let path = dotenv::var("DB_PATH").expect("DB_PATH must be set");
-    let conn = Arc::new(Mutex::new(db::establish_connection(&path).await?));
+    let conn = Arc::new(db::establish_connection(&path).await?);
     let bot = Bot::from_env().auto_send();
     let storage = SqliteStorage::open(&path, Json).await.unwrap();
 

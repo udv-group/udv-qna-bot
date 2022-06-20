@@ -10,3 +10,4 @@ rocket = { version = "0.5.0-rc.1", features = ["json"] }
 sqlx = { version = "0.5", features = [ "runtime-tokio-native-tls" , "sqlite", "migrate" ] }
 db = {path = "../db"}
 serde = "1.0"
+dotenv = "0.15"

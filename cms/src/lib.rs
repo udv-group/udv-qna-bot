@@ -5,6 +5,7 @@ mod users;
 
 use dotenv;
 use rocket::Build;
+use rocket_dyn_templates::Template;
 
 #[macro_use]
 extern crate rocket;
@@ -16,4 +17,5 @@ pub async fn rocket() -> rocket::Rocket<Build> {
         .mount("/", users::routes())
         .mount("/", questions::routes())
         .mount("/", categories::routes())
+        .attach(Template::fairing())
 }

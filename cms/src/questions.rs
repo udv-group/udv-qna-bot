@@ -1,25 +1,26 @@
-use crate::error_handlers::{EmptyResult, JsonResult};
-use db::questions::Question;
+use crate::error_handlers::{EmptyResult};
+use db::questions::{Question};
 use rocket::response::Redirect;
-use rocket::serde::{json::Json, Deserialize};
+
 use rocket::{Route, State};
-use rocket_dyn_templates::{context, tera::Tera, Template};
+use rocket_dyn_templates::{context, Template};
 use sqlx::SqlitePool;
+use std::path::PathBuf;
 
 use rocket::form::Form;
 use rocket::fs::TempFile;
 
-#[derive(Deserialize)]
-struct NewQuestion {
+#[derive(FromForm)]
+struct QuestionUpdate<'r> {
+    id: i64,
     category: Option<i64>,
     question: String,
     answer: String,
-    attachment: Option<String>,
+    attachment: Option<TempFile<'r>>,
 }
 
 #[derive(FromForm)]
-struct QuestionUpload<'r> {
-    id: i64,
+struct NewQuestion<'r> {
     category: Option<i64>,
     question: String,
     answer: String,
@@ -37,41 +38,68 @@ async fn get_questions(pool: &State<SqlitePool>) -> Template {
         },
     )
 }
-#[post("/questions", data = "<upload>")]
-fn update_question(upload: Form<QuestionUpload<'_>>) -> Redirect {
-    println!("{}", upload.question);
-    println!("{}", upload.answer);
-    println!("{:#?}", upload.attachment);
+#[post("/questions", data = "<question>")]
+async fn update_question(question: Form<QuestionUpdate<'_>>, pool: &State<SqlitePool>) -> Redirect {
+    let static_dir =
+        PathBuf::from(dotenv::var("STATIC_DIR").expect("Variable STATIC_DIR should be set"));
+    let mut question = question.into_inner();
+    let old_question = db::questions::get_question(pool, question.question.as_str())
+        .await
+        .unwrap();
+    let mut filename: Option<String> = old_question.attachment; // FIXME: add ability to remove attached files
+                                                                // TODO: don't send file if it was not selected
+    if let Some(file) = &mut question.attachment {
+        if file.len() > 0 {
+            if let Some(name) = file.name() {
+                let name = name.to_owned();
+                file.persist_to(static_dir.join(&name)).await.unwrap();
+                filename = Some(name);
+            }
+        }
+    }
+    let question = Question {
+        id: question.id,
+        category: question.category,
+        answer: question.answer,
+        question: question.question,
+        attachment: filename,
+    };
+    db::questions::update_question(pool, question)
+        .await
+        .unwrap();
     Redirect::to(uri!(get_questions))
 }
-// #[post("/questions", format = "json", data = "<question>")]
-// async fn create_question(
-//     question: Json<NewQuestion>,
-//     pool: &State<SqlitePool>,
-// ) -> JsonResult<Question> {
-//     let question = question.into_inner();
-//     db::questions::create_question(
-//         pool,
-//         question.question.as_str(),
-//         question.answer.as_str(),
-//         question.category,
-//         question.attachment.as_deref(),
-//     )
-//     .await?;
-//     let new_question = db::questions::get_question(pool, question.question.as_str()).await?;
-//     Ok(Json(new_question))
-// }
-// #[patch("/questions", format = "json", data = "<question>")]
-// async fn update_question(
-//     question: Json<Question>,
-//     pool: &State<SqlitePool>,
-// ) -> JsonResult<Question> {
-//     let question_inner = question.into_inner();
-//     let question = question_inner.question.clone();
-//     db::questions::update_question(pool, question_inner).await?;
-//     let question = db::questions::get_question(pool, question.as_str()).await?;
-//     Ok(Json(question))
-// }
+
+#[post("/questions/new", data = "<question>")]
+async fn create_question(
+    mut question: Form<NewQuestion<'_>>,
+    pool: &State<SqlitePool>,
+) -> Redirect {
+    let static_dir =
+        PathBuf::from(dotenv::var("STATIC_DIR").expect("Variable STATIC_DIR should be set"));
+    let mut filename: Option<String> = None;
+    // TODO: don't send file if it was not selected
+    if let Some(file) = &mut question.attachment {
+        if file.len() > 0 {
+            if let Some(name) = file.name() {
+                let name = name.to_owned();
+                file.persist_to(static_dir.join(&name)).await.unwrap();
+                filename = Some(name);
+            }
+        }
+    }
+    db::questions::create_question(
+        pool,
+        question.question.as_str(),
+        question.answer.as_str(),
+        question.category,
+        filename.as_deref(),
+    )
+    .await
+    .unwrap();
+    Redirect::to(uri!(get_questions))
+}
+
 #[delete("/questions/<question_id>")]
 async fn delete_question(question_id: i64, pool: &State<SqlitePool>) -> EmptyResult {
     db::questions::delete_question(pool, question_id).await?;
@@ -80,7 +108,7 @@ async fn delete_question(question_id: i64, pool: &State<SqlitePool>) -> EmptyRes
 pub fn routes() -> Vec<Route> {
     routes![
         get_questions,
-        // create_question,
+        create_question,
         update_question,
         delete_question
     ]

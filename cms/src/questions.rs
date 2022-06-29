@@ -1,5 +1,5 @@
-use crate::error_handlers::{EmptyResult};
-use db::questions::{Question};
+use crate::error_handlers::EmptyResult;
+use db::questions::Question;
 use rocket::response::Redirect;
 
 use rocket::{Route, State};
@@ -9,6 +9,8 @@ use std::path::PathBuf;
 
 use rocket::form::Form;
 use rocket::fs::TempFile;
+
+use serde::Serialize;
 
 #[derive(FromForm)]
 struct QuestionUpdate<'r> {
@@ -24,12 +26,41 @@ struct NewQuestion<'r> {
     category: Option<i64>,
     question: String,
     answer: String,
-    attachment: Option<TempFile<'r>>,
+    attachment: TempFile<'r>,
+}
+
+#[derive(Serialize)]
+struct ShowQuestion {
+    id: i64,
+    category: Option<i64>,
+    question: String,
+    answer: String,
+    attachment: Option<String>,
+    answer_trunk: String,
 }
 
 #[get("/questions")]
 async fn get_questions(pool: &State<SqlitePool>) -> Template {
-    let questions = db::questions::get_questions(pool).await.unwrap();
+    let questions: Vec<ShowQuestion> = db::questions::get_questions(pool)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|q| {
+            let mut trunk = q.answer.clone();
+            if trunk.len() > 29 {
+                trunk.truncate(25);
+                trunk.push_str(" ...");
+            }
+            ShowQuestion {
+                id: q.id,
+                category: q.category,
+                question: q.question,
+                answer: q.answer,
+                attachment: q.attachment,
+                answer_trunk: trunk,
+            }
+        })
+        .collect();
     Template::render(
         "questions",
         context! {
@@ -43,6 +74,7 @@ async fn update_question(question: Form<QuestionUpdate<'_>>, pool: &State<Sqlite
     let static_dir =
         PathBuf::from(dotenv::var("STATIC_DIR").expect("Variable STATIC_DIR should be set"));
     let mut question = question.into_inner();
+    println!("{:#?}", question.answer);
     let old_question = db::questions::get_question(pool, question.question.as_str())
         .await
         .unwrap();
@@ -55,6 +87,15 @@ async fn update_question(question: Form<QuestionUpdate<'_>>, pool: &State<Sqlite
                 file.persist_to(static_dir.join(&name)).await.unwrap();
                 filename = Some(name);
             }
+        } else {
+            if let Some(old_f) = filename {
+                let filepath = static_dir.join(old_f);
+                if filepath.exists() {
+                    // TODO: do not delete it if other questions are linked to it
+                    std::fs::remove_file(filepath).expect("File exists");
+                }
+            }
+            filename = None;
         }
     }
     let question = Question {
@@ -79,15 +120,16 @@ async fn create_question(
         PathBuf::from(dotenv::var("STATIC_DIR").expect("Variable STATIC_DIR should be set"));
     let mut filename: Option<String> = None;
     // TODO: don't send file if it was not selected
-    if let Some(file) = &mut question.attachment {
-        if file.len() > 0 {
-            if let Some(name) = file.name() {
-                let name = name.to_owned();
-                file.persist_to(static_dir.join(&name)).await.unwrap();
-                filename = Some(name);
-            }
+    let file = &mut question.attachment;
+
+    if file.len() > 0 {
+        if let Some(name) = file.name() {
+            let name = name.to_owned();
+            file.persist_to(static_dir.join(&name)).await.unwrap();
+            filename = Some(name);
         }
     }
+
     db::questions::create_question(
         pool,
         question.question.as_str(),

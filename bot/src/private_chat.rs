@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use sqlx::SqlitePool;
 use std::borrow::Borrow;
 
@@ -98,7 +99,16 @@ async fn on_question_select(
             if let Ok(question) =
                 db::questions::get_question(conn.borrow(), selected_question).await
             {
-                bot.send_message(msg.chat.id, question.answer).await?;
+                let data_v: Vec<String> = question
+                    .answer
+                    .chars()
+                    .chunks(2048)
+                    .into_iter()
+                    .map(|chunk| chunk.collect::<String>())
+                    .collect();
+                for data in data_v {
+                    bot.send_message(msg.chat.id, data).await.unwrap();
+                }
                 if let Some(att) = question.attachment {
                     let filepath = static_dir.join(att);
                     if filepath.is_file() {

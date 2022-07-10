@@ -1,49 +1,58 @@
 {% extends "base" %}
 
 {% block content %}
-<h3>Here are your items:</h3>
-<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
-  Create
-</button>
-<table class="table">
-  <thead>
-    <tr>
-      <th scope="col">#</th>
-      <th scope="col">Category</th>
-      <th scope="col">Question</th>
-      <th scope="col">Answer</th>
-      <th scope="col">Attachment</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for question in questions %}
-    <tr>
-      <th scope="row">{{question.id}}</th>
-      <td>{{question.category}}</td>
-      <td>{{question.question}}</td>
-      <td>{{question.answer_trunk}}</td>
-      <td>{{question.attachment}}</td>
-      <td>
-        
-          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal"
-            data-bs-id="{{question.id}}" data-bs-category="{{question.category}}"
-            data-bs-question="{{question.question}}" data-bs-answer="{{question.answer}}"
-            data-bs-attachment="{{question.attachment}}">
-            Edit
-          </button>
-          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#changeAttachmentModal"
-            data-bs-id="{{question.id}}" data-bs-category="{{question.category}}"
-            data-bs-question="{{question.question}}" data-bs-answer="{{question.answer}}"
-            data-bs-attachment="{{question.attachment}}">
-            Edit Attachment
-          </button>
-          <button type="button" class="btn btn-danger">Delete</button>
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <h3>Here are your items:</h3>
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+        Create
+      </button>
+      <div class="table-responsive-sm">
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Category</th>
+              <th scope="col">Question</th>
+              <th scope="col">Answer</th>
+              <th scope="col">Attachment</th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for question in questions %}
+            <tr>
+              <th scope="row">{{question.id}}</th>
+              <td>{{question.category}}</td>
+              <td>{{question.question}}</td>
+              <td>{{question.answer_trunk}}</td>
+              <td>{{question.attachment}}</td>
+              <td>
 
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal"
+                  data-bs-id="{{question.id}}" data-bs-category="{{question.category}}"
+                  data-bs-question="{{question.question}}" data-bs-answer="{{question.answer}}"
+                  data-bs-attachment="{{question.attachment}}">
+                  Edit
+                </button>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                  data-bs-target="#changeAttachmentModal" data-bs-id="{{question.id}}"
+                  data-bs-category="{{question.category}}" data-bs-question="{{question.question}}"
+                  data-bs-answer="{{question.answer}}" data-bs-attachment="{{question.attachment}}">
+                  Edit Attachment
+                </button>
+                <button type="button" class="btn btn-danger">Delete</button>
+
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">

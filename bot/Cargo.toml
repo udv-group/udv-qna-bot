@@ -10,6 +10,7 @@ serde_json = { version = "1.0" }
 sqlx = { version = "0.5", features = [ "runtime-tokio-native-tls" , "sqlite", "migrate" ] }
 db = {path = "../db"}
 anyhow = "1.0"
+itertools = "0.10"
 dotenv = "0.15"
 
 tokio = { version =  "1.15", features = ["full"] }

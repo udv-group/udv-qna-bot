@@ -1,45 +1,59 @@
-use crate::error_handlers::{EmptyResult, JsonResult};
 use db::categories::Category;
-use rocket::serde::{json::Json, Deserialize};
+use rocket::form::{Form, FromForm};
+use rocket::response::Redirect;
 use rocket::{Route, State};
+use rocket_dyn_templates::{context, Template};
 use sqlx::SqlitePool;
 
-#[derive(Deserialize)]
+#[derive(FromForm)]
+struct CategoryUpdate {
+    id: i64,
+    name: String,
+}
+
+#[derive(FromForm)]
 struct NewCategory {
     name: String,
 }
 
 #[get("/categories")]
-async fn get_categories(pool: &State<SqlitePool>) -> JsonResult<Vec<Category>> {
-    let categories = db::categories::get_categories(pool).await?;
-    Ok(Json(categories))
+async fn get_categories(pool: &State<SqlitePool>) -> Template {
+    let categories = db::categories::get_categories(pool).await.unwrap();
+    Template::render(
+        "categories",
+        context! {
+            categories: categories,
+            title: "Categories"
+        },
+    )
 }
 
-#[post("/categories", format = "json", data = "<category>")]
-async fn create_category(
-    category: Json<NewCategory>,
-    pool: &State<SqlitePool>,
-) -> JsonResult<Category> {
+#[post("/categories/new", data = "<category>")]
+async fn create_category(category: Form<NewCategory>, pool: &State<SqlitePool>) -> Redirect {
     let category = category.into_inner();
-    let category_id = db::categories::create_category(pool, category.name.as_str()).await?;
-    let new_category = db::categories::get_category(pool, category_id).await?;
-    Ok(Json(new_category))
+    db::categories::create_category(pool, category.name.as_str())
+        .await
+        .unwrap();
+    Redirect::to(uri!(get_categories))
 }
-#[patch("/categories", format = "json", data = "<category>")]
-async fn update_category(
-    category: Json<Category>,
-    pool: &State<SqlitePool>,
-) -> JsonResult<Category> {
-    let category_inner = category.into_inner();
-    let category_id = category_inner.id;
-    db::categories::update_category(pool, category_inner).await?;
-    let category = db::categories::get_category(pool, category_id).await?;
-    Ok(Json(category))
+#[post("/categories", data = "<category>")]
+async fn update_category(category: Form<CategoryUpdate>, pool: &State<SqlitePool>) -> Redirect {
+    let category = category.into_inner();
+    let category_update = Category {
+        id: category.id,
+        name: category.name,
+    };
+    db::categories::update_category(pool, category_update)
+        .await
+        .unwrap();
+    Redirect::to(uri!(get_categories))
 }
 #[delete("/categories/<category_id>")]
-async fn delete_category(category_id: i64, pool: &State<SqlitePool>) -> EmptyResult {
-    db::categories::delete_category(pool, category_id).await?;
-    Ok(())
+async fn delete_category(category_id: i64, pool: &State<SqlitePool>) -> Redirect {
+    db::categories::delete_category(pool, category_id)
+        .await
+        .unwrap();
+    Redirect::to(uri!(get_categories))
 }
 pub fn routes() -> Vec<Route> {
     routes![

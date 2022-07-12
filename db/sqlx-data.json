@@ -1,16 +1,59 @@
 {
   "db": "SQLite",
   "06a5737a855cdbbb4d906f50284a24e009754ecaf103625736221b30c44c70dd": {
+    "query": "\nINSERT INTO categories (name) VALUES (?1)\n        ",
     "describe": {
       "columns": [],
-      "nullable": [],
       "parameters": {
         "Right": 1
-      }
-    },
-    "query": "\nINSERT INTO categories (name) VALUES (?1)\n        "
+      },
+      "nullable": []
+    }
+  },
+  "0ea222aad8d9afb50aa5b42d247b8bc9b4b408065f7f8f7db6d5f0f4fc4affb9": {
+    "query": "\n        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachment FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "category",
+          "ordinal": 1,
+          "type_info": "Int64"
+        },
+        {
+          "name": "question",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "answer",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "attachment",
+          "ordinal": 4,
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        true,
+        false,
+        false,
+        true
+      ]
+    }
   },
   "1b4d52c830ad4ccdc484d59e8859df77318f22367c81df47983dcf1f62706ede": {
+    "query": "\n        SELECT * FROM users WHERE users.id = ?1\n        ",
     "describe": {
       "columns": [
         {
@@ -34,49 +77,39 @@
           "type_info": "Text"
         }
       ],
+      "parameters": {
+        "Right": 1
+      },
       "nullable": [
         false,
         true,
         false,
         true
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n        SELECT * FROM users WHERE users.id = ?1\n        "
+      ]
+    }
   },
   "24c549ba95c88259c00e2b7e48d7d38d4468ff39def0f0a5c2c367e3f2133c96": {
+    "query": "\n        DELETE FROM questions WHERE questions.id = ?1\n        ",
     "describe": {
       "columns": [],
-      "nullable": [],
       "parameters": {
         "Right": 1
-      }
-    },
-    "query": "\n        DELETE FROM questions WHERE questions.id = ?1\n        "
+      },
+      "nullable": []
+    }
   },
   "266ca63f7b9ec09003a8a093082535ce76e90cc6fe5732f52d59b70d8b198ff8": {
+    "query": "\n        DELETE FROM categories WHERE categories.id = ?1\n        ",
     "describe": {
       "columns": [],
-      "nullable": [],
       "parameters": {
         "Right": 1
-      }
-    },
-    "query": "\n        DELETE FROM categories WHERE categories.id = ?1\n        "
-  },
-  "450bd049be66df320819790485bc69a1522afc367e898de2e8093840e9051ed8": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 4
-      }
-    },
-    "query": "\n        UPDATE questions SET category=?1, question=?2, answer=?3 WHERE questions.id = ?4\n        "
+      },
+      "nullable": []
+    }
   },
   "4f63620b9f092d5ee629bef5b2d6b6f3251f27a33746fb1e0518e59f93764d80": {
+    "query": "\n        SELECT * FROM questions WHERE questions.question = ?1\n        ",
     "describe": {
       "columns": [
         {
@@ -98,21 +131,27 @@
           "name": "answer",
           "ordinal": 3,
           "type_info": "Text"
+        },
+        {
+          "name": "attachment",
+          "ordinal": 4,
+          "type_info": "Text"
         }
       ],
+      "parameters": {
+        "Right": 1
+      },
       "nullable": [
         false,
         true,
         false,
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n        SELECT * FROM questions WHERE questions.question = ?1\n        "
+        false,
+        true
+      ]
+    }
   },
   "6b4ad76ba7683718303876ad0a5838e0a39f7bce10ede23c054206f06eadb4c0": {
+    "query": "\nSELECT id, name\nFROM categories\nORDER BY id\n        ",
     "describe": {
       "columns": [
         {
@@ -125,64 +164,38 @@
           "ordinal": 1,
           "type_info": "Text"
         }
-      ],
-      "nullable": [
-        false,
-        false
       ],
       "parameters": {
         "Right": 0
-      }
-    },
-    "query": "\nSELECT id, name\nFROM categories\nORDER BY id\n        "
-  },
-  "7d23eee869862759185ab9ead6113328f641bd66a967ae707f2fb208204320f4": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int64"
-        },
-        {
-          "name": "category",
-          "ordinal": 1,
-          "type_info": "Int64"
-        },
-        {
-          "name": "question",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "answer",
-          "ordinal": 3,
-          "type_info": "Text"
-        }
-      ],
+      },
       "nullable": [
         false,
-        true,
-        false,
         false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n        SELECT questions.id, questions.category, questions.question, questions.answer FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1\n        "
+      ]
+    }
   },
-  "8d295a00285e82121f5218baa575a699bc035902b5eca4f207dbc328fc95546a": {
+  "8ba828c8ed38b941993e57924d9e2e06cab0501d7c65c1f72913cbdb6f32e1a2": {
+    "query": "\n        UPDATE questions SET category=?1, question=?2, answer=?3, attachment=?4 WHERE questions.id = ?5\n        ",
     "describe": {
       "columns": [],
-      "nullable": [],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": []
+    }
+  },
+  "8d295a00285e82121f5218baa575a699bc035902b5eca4f207dbc328fc95546a": {
+    "query": "\n        INSERT INTO users (username, first_name, last_name) VALUES(?1, ?2, ?3)\n        ",
+    "describe": {
+      "columns": [],
       "parameters": {
         "Right": 3
-      }
-    },
-    "query": "\n        INSERT INTO users (username, first_name, last_name) VALUES(?1, ?2, ?3)\n        "
+      },
+      "nullable": []
+    }
   },
   "a14bd519fd3ecda2df5d05cfbdfe889037b1b863b492088b17d2a4197054b7d5": {
+    "query": "\n        SELECT * FROM categories WHERE categories.id = ?1\n        ",
     "describe": {
       "columns": [
         {
@@ -196,17 +209,17 @@
           "type_info": "Text"
         }
       ],
+      "parameters": {
+        "Right": 1
+      },
       "nullable": [
         false,
         false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n        SELECT * FROM categories WHERE categories.id = ?1\n        "
+      ]
+    }
   },
   "a2c624a66b1999281d3b63e85b77785d0aae8d5ebc4865b7d42d7afd81e6f58c": {
+    "query": "\n        SELECT * FROM users\n        ",
     "describe": {
       "columns": [
         {
@@ -230,49 +243,39 @@
           "type_info": "Text"
         }
       ],
+      "parameters": {
+        "Right": 0
+      },
       "nullable": [
         false,
         true,
         false,
         true
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "\n        SELECT * FROM users\n        "
+      ]
+    }
   },
   "bc597842b553f28708763cba03ffe5dbd98af6eaf28edfac6343ca9cb61c074d": {
+    "query": "\n        UPDATE categories SET name=?1 WHERE categories.id = ?2\n        ",
     "describe": {
       "columns": [],
-      "nullable": [],
       "parameters": {
         "Right": 2
-      }
-    },
-    "query": "\n        UPDATE categories SET name=?1 WHERE categories.id = ?2\n        "
-  },
-  "cabacb5bf57a15a02e15a622137a40f8b5281ef5e77dcce0444ae3e4ee8fc0d7": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 3
-      }
-    },
-    "query": "\nINSERT INTO questions (category, question, answer) VALUES (?1, ?2, ?3)\n        "
+      },
+      "nullable": []
+    }
   },
   "f52de2da363d8bd000378257bd31f20880964105209a457fd451077b428f058d": {
+    "query": "\n        DELETE FROM users WHERE users.id = ?1\n        ",
     "describe": {
       "columns": [],
-      "nullable": [],
       "parameters": {
         "Right": 1
-      }
-    },
-    "query": "\n        DELETE FROM users WHERE users.id = ?1\n        "
+      },
+      "nullable": []
+    }
   },
   "f5a2df2ac14ec1546b809d4e0d302f6b933955f70df7427cf2a27cb3f0fba96b": {
+    "query": "\n        SELECT * FROM questions ORDER BY id \n        ",
     "describe": {
       "columns": [
         {
@@ -294,28 +297,43 @@
           "name": "answer",
           "ordinal": 3,
           "type_info": "Text"
+        },
+        {
+          "name": "attachment",
+          "ordinal": 4,
+          "type_info": "Text"
         }
       ],
+      "parameters": {
+        "Right": 0
+      },
       "nullable": [
         false,
         true,
         false,
-        false
-      ],
-      "parameters": {
-        "Right": 0
-      }
-    },
-    "query": "\n        SELECT * FROM questions ORDER BY id \n        "
+        false,
+        true
+      ]
+    }
   },
-  "fc4a2dc1d69776dc2b8b21cbdb9b3d03ddb27b743c8459ca57c07476bfd12937": {
+  "f861b24d14e649d2d9548d1fde3f658688e845cf34f8582fe7eca2f4c985172e": {
+    "query": "\nINSERT INTO questions (category, question, answer, attachment) VALUES (?1, ?2, ?3, ?4)\n        ",
     "describe": {
       "columns": [],
-      "nullable": [],
       "parameters": {
         "Right": 4
-      }
-    },
-    "query": "\n        UPDATE users SET username=?1, first_name=?2, last_name=?3 WHERE users.id = ?4\n        "
+      },
+      "nullable": []
+    }
+  },
+  "fc4a2dc1d69776dc2b8b21cbdb9b3d03ddb27b743c8459ca57c07476bfd12937": {
+    "query": "\n        UPDATE users SET username=?1, first_name=?2, last_name=?3 WHERE users.id = ?4\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 4
+      },
+      "nullable": []
+    }
   }
 }

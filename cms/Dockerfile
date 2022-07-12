@@ -32,6 +32,7 @@ FROM debian:bullseye-slim
 RUN apt-get update && apt-get install libssl-dev libsqlite3-dev ca-certificates -y
 COPY --from=builder /build/target/release/cms /app/cms
 COPY ./cms/Rocket.toml /app/Rocket.toml
+COPY ./cms/templates /app/templates
 
 WORKDIR /app
 CMD ["/app/cms"]

@@ -84,7 +84,7 @@ async fn update_question(question: Form<QuestionUpdate<'_>>, pool: &State<Sqlite
         if file.len() > 0 {
             if let Some(name) = file.name() {
                 let name = name.to_owned();
-                file.persist_to(static_dir.join(&name)).await.unwrap();
+                file.move_copy_to(static_dir.join(&name)).await.unwrap();
                 filename = Some(name);
             }
         } else {
@@ -125,7 +125,7 @@ async fn create_question(
     if file.len() > 0 {
         if let Some(name) = file.name() {
             let name = name.to_owned();
-            file.persist_to(static_dir.join(&name)).await.unwrap();
+            file.move_copy_to(static_dir.join(&name)).await.unwrap();
             filename = Some(name);
         }
     }

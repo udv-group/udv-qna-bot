@@ -26,8 +26,8 @@
                 data-bs-id="{{category.id}}" data-bs-name="{{category.name}}">
                 Edit
               </button>
-              <button type="button" class="btn btn-danger">Delete</button>
-
+              <button type="button" class="btn btn-danger"
+                onclick="fetch('/categories/{{category.id}}', {method: 'DELETE'}).then(() => window.location.reload())">Delete</button>
             </td>
           </tr>
           {% endfor %}

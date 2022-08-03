@@ -69,12 +69,12 @@ async fn get_questions(pool: &State<SqlitePool>) -> Template {
         },
     )
 }
+
 #[post("/questions", data = "<question>")]
 async fn update_question(question: Form<QuestionUpdate<'_>>, pool: &State<SqlitePool>) -> Redirect {
     let static_dir =
         PathBuf::from(dotenv::var("STATIC_DIR").expect("Variable STATIC_DIR should be set"));
     let mut question = question.into_inner();
-    println!("{:#?}", question.answer);
     let old_question = db::questions::get_question(pool, question.question.as_str())
         .await
         .unwrap();
@@ -143,10 +143,11 @@ async fn create_question(
 }
 
 #[delete("/questions/<question_id>")]
-async fn delete_question(question_id: i64, pool: &State<SqlitePool>) -> EmptyResult {
-    db::questions::delete_question(pool, question_id).await?;
-    Ok(())
+async fn delete_question(question_id: i64, pool: &State<SqlitePool>) -> Redirect {
+    db::questions::delete_question(pool, question_id).await.unwrap();
+    Redirect::to(uri!(get_questions))
 }
+
 pub fn routes() -> Vec<Route> {
     routes![
         get_questions,

@@ -42,8 +42,8 @@
                   data-bs-answer="{{question.answer}}" data-bs-attachment="{{question.attachment}}">
                   Edit Attachment
                 </button>
-                <button type="button" class="btn btn-danger">Delete</button>
-
+                <button type="button" class="btn btn-danger"
+                  onclick="fetch('/questions/{{question.id}}', {method: 'DELETE'}).then(() => window.location.reload())">Delete</button>
               </td>
             </tr>
             {% endfor %}
@@ -146,13 +146,15 @@
 
           <div class="mb-3">
             <label for="attachment" class="form-label">Attachment</label>
+            <span class="fa fa-question" data-toggle="tooltip" data-placement="top"
+              title="To remove an attachment do not select the file"></span>
             <input class="form-control" type="file" id="attachment" name="attachment">
             <!-- <button type="button" class="btn btn-secondary" >Download</button> -->
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             <button type="submit" class="btn btn-primary" data-bs-dismiss="modal"
-              data-bs-target="#createModal">Create</button>
+              data-bs-target="#createModal">Save</button>
           </div>
         </form>
       </div>

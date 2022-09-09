@@ -1,4 +1,3 @@
-use crate::error_handlers::EmptyResult;
 use db::questions::Question;
 use rocket::response::Redirect;
 
@@ -39,6 +38,14 @@ struct ShowQuestion {
     answer_trunk: String,
 }
 
+fn find_nex_char_boundary(index: usize, string: &str) -> usize {
+    let mut index = index;
+    while !string.is_char_boundary(index) && index < string.len() {
+        index += 1;
+    }
+    index
+}
+
 #[get("/questions")]
 async fn get_questions(pool: &State<SqlitePool>) -> Template {
     let questions: Vec<ShowQuestion> = db::questions::get_questions(pool)
@@ -48,7 +55,7 @@ async fn get_questions(pool: &State<SqlitePool>) -> Template {
         .map(|q| {
             let mut trunk = q.answer.clone();
             if trunk.len() > 29 {
-                trunk.truncate(25);
+                trunk.truncate(find_nex_char_boundary(25, &trunk));
                 trunk.push_str(" ...");
             }
             ShowQuestion {
@@ -144,7 +151,9 @@ async fn create_question(
 
 #[delete("/questions/<question_id>")]
 async fn delete_question(question_id: i64, pool: &State<SqlitePool>) -> Redirect {
-    db::questions::delete_question(pool, question_id).await.unwrap();
+    db::questions::delete_question(pool, question_id)
+        .await
+        .unwrap();
     Redirect::to(uri!(get_questions))
 }
 
@@ -155,4 +164,26 @@ pub fn routes() -> Vec<Route> {
         update_question,
         delete_question
     ]
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_find_boundary() {
+        let s = "some string";
+        assert_eq!(find_nex_char_boundary(3, s), 3)
+    }
+
+    #[test]
+    fn test_find_boundary_cyrillic() {
+        let s = "немного текста";
+        assert_eq!(find_nex_char_boundary(3, s), 4)
+    }
+
+    #[test]
+    fn test_find_boundary_end_of_text() {
+        let s = "short";
+        assert_eq!(find_nex_char_boundary(10, s), 10)
+    }
 }

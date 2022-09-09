@@ -39,12 +39,12 @@ async fn run() -> Result<(), Box<dyn Error>> {
         );
 
     Dispatcher::builder(bot, handler)
+        .enable_ctrlc_handler()
         .dependencies(dptree::deps![conn, storage, Arc::new(static_dir)])
         .default_handler(|upd| async move {
             dbg!(upd);
         })
         .build()
-        .setup_ctrlc_handler()
         .dispatch()
         .await;
 

@@ -8,6 +8,8 @@ pub struct User {
     pub username: Option<String>,
     pub first_name: String,
     pub last_name: Option<String>,
+    pub is_admin: bool,
+    pub active: bool,
 }
 
 pub async fn get_user(pool: &SqlitePool, id: i64) -> sqlx::Result<User> {
@@ -34,18 +36,22 @@ pub async fn get_users(pool: &SqlitePool) -> sqlx::Result<Vec<User>> {
 }
 pub async fn create_user(
     pool: &SqlitePool,
-    username: String,
-    first_name: String,
-    last_name: Option<String>,
+    username: &str,
+    first_name: &str,
+    last_name: Option<&str>,
+    is_admin: bool,
+    active: bool,
 ) -> sqlx::Result<i64> {
     let mut conn = pool.acquire().await?;
     let id = sqlx::query!(
         r#"
-        INSERT INTO users (username, first_name, last_name) VALUES(?1, ?2, ?3)
+        INSERT INTO users (username, first_name, last_name, is_admin, active) VALUES(?1, ?2, ?3, ?4, ?5)
         "#,
         username,
         first_name,
-        last_name
+        last_name,
+        is_admin,
+        active
     )
     .execute(&mut conn)
     .await?
@@ -59,11 +65,13 @@ pub async fn update_user(pool: &SqlitePool, user: User) -> sqlx::Result<()> {
 
     sqlx::query!(
         r#"
-        UPDATE users SET username=?1, first_name=?2, last_name=?3 WHERE users.id = ?4
+        UPDATE users SET username=?1, first_name=?2, last_name=?3, is_admin=?4, active=?5 WHERE users.id = ?6
         "#,
         user.username,
         user.first_name,
         user.last_name,
+        user.is_admin,
+        user.active,
         user.id
     )
     .execute(&mut conn)
@@ -98,9 +106,11 @@ pub async fn import_users(pool: &SqlitePool, users: Vec<User>) -> sqlx::Result<(
         } else {
             create_user(
                 pool,
-                user.username.unwrap_or_else(|| "".to_string()),
-                user.first_name,
-                user.last_name,
+                &user.username.unwrap_or_else(|| "".to_string()),
+                &user.first_name,
+                user.last_name.as_deref(),
+                user.is_admin,
+                user.active,
             )
             .await?;
         }

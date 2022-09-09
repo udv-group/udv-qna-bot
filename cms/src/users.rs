@@ -9,6 +9,8 @@ struct NewUser {
     username: String,
     first_name: String,
     last_name: Option<String>,
+    active: bool,
+    is_admin: bool,
 }
 
 #[get("/users")]
@@ -20,8 +22,15 @@ async fn get_users(pool: &State<SqlitePool>) -> JsonResult<Vec<User>> {
 #[post("/users", format = "json", data = "<user>")]
 async fn create_user(user: Json<NewUser>, pool: &State<SqlitePool>) -> JsonResult<User> {
     let user = user.into_inner();
-    let user_id =
-        db::users::create_user(pool, user.username, user.first_name, user.last_name).await?;
+    let user_id = db::users::create_user(
+        pool,
+        &user.username,
+        &user.first_name,
+        user.last_name.as_deref(),
+        user.is_admin,
+        user.active,
+    )
+    .await?;
     let new_user = db::users::get_user(pool, user_id).await?;
     Ok(Json(new_user))
 }

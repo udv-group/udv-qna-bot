@@ -75,6 +75,16 @@
           "name": "last_name",
           "ordinal": 3,
           "type_info": "Text"
+        },
+        {
+          "name": "is_admin",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "active",
+          "ordinal": 5,
+          "type_info": "Bool"
         }
       ],
       "parameters": {
@@ -84,7 +94,9 @@
         false,
         true,
         false,
-        true
+        true,
+        false,
+        false
       ]
     }
   },
@@ -241,6 +253,16 @@
           "name": "last_name",
           "ordinal": 3,
           "type_info": "Text"
+        },
+        {
+          "name": "is_admin",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "active",
+          "ordinal": 5,
+          "type_info": "Bool"
         }
       ],
       "parameters": {
@@ -250,7 +272,9 @@
         false,
         true,
         false,
-        true
+        true,
+        false,
+        false
       ]
     }
   },

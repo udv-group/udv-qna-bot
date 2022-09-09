@@ -20,9 +20,8 @@ services:
     build:
       context: .
       dockerfile: ./cms/Dockerfile
-    volumes:
-      - ${DB_PATH:-./database/bot.db}:/data/bot.db
-      - ${STATIC_DIR:-./static}:/static
+    volumes_from:
+      - bot
     environment:
        DB_PATH: /data/bot.db
        STATIC_DIR: /static

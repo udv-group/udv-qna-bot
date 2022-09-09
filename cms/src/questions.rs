@@ -1,56 +1,162 @@
-use crate::error_handlers::{EmptyResult, JsonResult};
 use db::questions::Question;
-use rocket::serde::{json::Json, Deserialize};
-use rocket::{Route, State};
-use sqlx::SqlitePool;
+use rocket::response::Redirect;
 
-#[derive(Deserialize)]
-struct NewQuestion {
+use rocket::{Route, State};
+use rocket_dyn_templates::{context, Template};
+use sqlx::SqlitePool;
+use std::path::PathBuf;
+
+use rocket::form::Form;
+use rocket::fs::TempFile;
+
+use serde::Serialize;
+
+#[derive(FromForm)]
+struct QuestionUpdate<'r> {
+    id: i64,
+    category: Option<i64>,
+    question: String,
+    answer: String,
+    attachment: Option<TempFile<'r>>,
+}
+
+#[derive(FromForm)]
+struct NewQuestion<'r> {
+    category: Option<i64>,
+    question: String,
+    answer: String,
+    attachment: TempFile<'r>,
+}
+
+#[derive(Serialize)]
+struct ShowQuestion {
+    id: i64,
     category: Option<i64>,
     question: String,
     answer: String,
     attachment: Option<String>,
+    answer_trunk: String,
+}
+
+fn find_nex_char_boundary(index: usize, string: &str) -> usize {
+    let mut index = index;
+    while !string.is_char_boundary(index) && index < string.len() {
+        index += 1;
+    }
+    index
 }
 
 #[get("/questions")]
-async fn get_questions(pool: &State<SqlitePool>) -> JsonResult<Vec<Question>> {
-    let question = db::questions::get_questions(pool).await?;
-    Ok(Json(question))
+async fn get_questions(pool: &State<SqlitePool>) -> Template {
+    let questions: Vec<ShowQuestion> = db::questions::get_questions(pool)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|q| {
+            let mut trunk = q.answer.clone();
+            if trunk.len() > 29 {
+                trunk.truncate(find_nex_char_boundary(25, &trunk));
+                trunk.push_str(" ...");
+            }
+            ShowQuestion {
+                id: q.id,
+                category: q.category,
+                question: q.question,
+                answer: q.answer,
+                attachment: q.attachment,
+                answer_trunk: trunk,
+            }
+        })
+        .collect();
+    Template::render(
+        "questions",
+        context! {
+            questions: questions,
+            title: "Questions"
+        },
+    )
 }
 
-#[post("/questions", format = "json", data = "<question>")]
+#[post("/questions", data = "<question>")]
+async fn update_question(question: Form<QuestionUpdate<'_>>, pool: &State<SqlitePool>) -> Redirect {
+    let static_dir =
+        PathBuf::from(dotenv::var("STATIC_DIR").expect("Variable STATIC_DIR should be set"));
+    let mut question = question.into_inner();
+    let old_question = db::questions::get_question(pool, question.question.as_str())
+        .await
+        .unwrap();
+    let mut filename: Option<String> = old_question.attachment; // FIXME: add ability to remove attached files
+                                                                // TODO: don't send file if it was not selected
+    if let Some(file) = &mut question.attachment {
+        if file.len() > 0 {
+            if let Some(name) = file.name() {
+                let name = name.to_owned();
+                file.move_copy_to(static_dir.join(&name)).await.unwrap();
+                filename = Some(name);
+            }
+        } else {
+            if let Some(old_f) = filename {
+                let filepath = static_dir.join(old_f);
+                if filepath.exists() {
+                    // TODO: do not delete it if other questions are linked to it
+                    std::fs::remove_file(filepath).expect("File exists");
+                }
+            }
+            filename = None;
+        }
+    }
+    let question = Question {
+        id: question.id,
+        category: question.category,
+        answer: question.answer,
+        question: question.question,
+        attachment: filename,
+    };
+    db::questions::update_question(pool, question)
+        .await
+        .unwrap();
+    Redirect::to(uri!(get_questions))
+}
+
+#[post("/questions/new", data = "<question>")]
 async fn create_question(
-    question: Json<NewQuestion>,
+    mut question: Form<NewQuestion<'_>>,
     pool: &State<SqlitePool>,
-) -> JsonResult<Question> {
-    let question = question.into_inner();
+) -> Redirect {
+    let static_dir =
+        PathBuf::from(dotenv::var("STATIC_DIR").expect("Variable STATIC_DIR should be set"));
+    let mut filename: Option<String> = None;
+    // TODO: don't send file if it was not selected
+    let file = &mut question.attachment;
+
+    if file.len() > 0 {
+        if let Some(name) = file.name() {
+            let name = name.to_owned();
+            file.move_copy_to(static_dir.join(&name)).await.unwrap();
+            filename = Some(name);
+        }
+    }
+
     db::questions::create_question(
         pool,
         question.question.as_str(),
         question.answer.as_str(),
         question.category,
-        question.attachment.as_deref(),
+        filename.as_deref(),
     )
-    .await?;
-    let new_question = db::questions::get_question(pool, question.question.as_str()).await?;
-    Ok(Json(new_question))
+    .await
+    .unwrap();
+    Redirect::to(uri!(get_questions))
 }
-#[patch("/questions", format = "json", data = "<question>")]
-async fn update_question(
-    question: Json<Question>,
-    pool: &State<SqlitePool>,
-) -> JsonResult<Question> {
-    let question_inner = question.into_inner();
-    let question = question_inner.question.clone();
-    db::questions::update_question(pool, question_inner).await?;
-    let question = db::questions::get_question(pool, question.as_str()).await?;
-    Ok(Json(question))
-}
+
 #[delete("/questions/<question_id>")]
-async fn delete_question(question_id: i64, pool: &State<SqlitePool>) -> EmptyResult {
-    db::questions::delete_question(pool, question_id).await?;
-    Ok(())
+async fn delete_question(question_id: i64, pool: &State<SqlitePool>) -> Redirect {
+    db::questions::delete_question(pool, question_id)
+        .await
+        .unwrap();
+    Redirect::to(uri!(get_questions))
 }
+
 pub fn routes() -> Vec<Route> {
     routes![
         get_questions,
@@ -58,4 +164,26 @@ pub fn routes() -> Vec<Route> {
         update_question,
         delete_question
     ]
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_find_boundary() {
+        let s = "some string";
+        assert_eq!(find_nex_char_boundary(3, s), 3)
+    }
+
+    #[test]
+    fn test_find_boundary_cyrillic() {
+        let s = "немного текста";
+        assert_eq!(find_nex_char_boundary(3, s), 4)
+    }
+
+    #[test]
+    fn test_find_boundary_end_of_text() {
+        let s = "short";
+        assert_eq!(find_nex_char_boundary(10, s), 10)
+    }
 }

@@ -20,6 +20,7 @@ pub async fn auth_user(conn: &SqlitePool, user: &User) -> anyhow::Result<bool> {
         {
             db::users::create_user(
                 conn,
+                user.id.0.try_into().unwrap(),
                 user.username.as_ref().unwrap(),
                 &user.first_name,
                 user.last_name.as_deref(),

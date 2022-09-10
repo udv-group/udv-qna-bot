@@ -36,6 +36,7 @@ pub async fn get_users(pool: &SqlitePool) -> sqlx::Result<Vec<User>> {
 }
 pub async fn create_user(
     pool: &SqlitePool,
+    id: i64,
     username: &str,
     first_name: &str,
     last_name: Option<&str>,
@@ -43,10 +44,11 @@ pub async fn create_user(
     active: bool,
 ) -> sqlx::Result<i64> {
     let mut conn = pool.acquire().await?;
-    let id = sqlx::query!(
+    let user_id = sqlx::query!(
         r#"
-        INSERT INTO users (username, first_name, last_name, is_admin, active) VALUES(?1, ?2, ?3, ?4, ?5)
+        INSERT INTO users (id, username, first_name, last_name, is_admin, active) VALUES(?1, ?2, ?3, ?4, ?5, ?6)
         "#,
+        id,
         username,
         first_name,
         last_name,
@@ -57,7 +59,7 @@ pub async fn create_user(
     .await?
     .last_insert_rowid();
 
-    Ok(id)
+    Ok(user_id)
 }
 pub async fn update_user(pool: &SqlitePool, user: User) -> sqlx::Result<()> {
     get_user(pool, user.id).await?;
@@ -106,6 +108,7 @@ pub async fn import_users(pool: &SqlitePool, users: Vec<User>) -> sqlx::Result<(
         } else {
             create_user(
                 pool,
+                user.id,
                 &user.username.unwrap_or_else(|| "".to_string()),
                 &user.first_name,
                 user.last_name.as_deref(),

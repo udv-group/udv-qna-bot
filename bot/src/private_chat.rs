@@ -1,3 +1,4 @@
+use db::Question;
 use itertools::Itertools;
 use sqlx::SqlitePool;
 use std::borrow::Borrow;
@@ -9,7 +10,7 @@ use teloxide::{
     dispatching::dialogue::{serializer::Json, SqliteStorage},
     dispatching::DpHandlerDescription,
     prelude::*,
-    types::{InputFile, KeyboardButton, KeyboardMarkup},
+    types::{InputFile, KeyboardButton, KeyboardMarkup, KeyboardRemove},
     utils::command::BotCommands,
 };
 
@@ -31,9 +32,10 @@ enum Command {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub enum State {
+    // In this state list of Categories is displayed on the keyboard
     ShowingCategories,
+    // In this state list of Questions is displayed on the keyboard
     ShowingQuestions { category: String },
-    Blocked,
 }
 
 impl Default for State {
@@ -42,7 +44,7 @@ impl Default for State {
     }
 }
 
-async fn make_main_menu(conn: &SqlitePool) -> anyhow::Result<KeyboardMarkup> {
+async fn make_categories_keyboard(conn: &SqlitePool) -> anyhow::Result<KeyboardMarkup> {
     let results: Vec<String> = db::categories::get_categories(conn)
         .await?
         .into_iter()
@@ -51,7 +53,10 @@ async fn make_main_menu(conn: &SqlitePool) -> anyhow::Result<KeyboardMarkup> {
     make_keyboard(results, 2, false)
 }
 
-async fn make_questions(conn: &SqlitePool, category: &str) -> anyhow::Result<KeyboardMarkup> {
+async fn make_questions_keyboard(
+    conn: &SqlitePool,
+    category: &str,
+) -> anyhow::Result<KeyboardMarkup> {
     let results: Vec<String> = db::questions::get_questions_by_category(conn, category)
         .await?
         .into_iter()
@@ -79,6 +84,34 @@ fn make_keyboard(
     Ok(KeyboardMarkup::new(keyboard))
 }
 
+async fn reply_with_answer(
+    bot: AutoSend<Bot>,
+    msg: Message,
+    static_dir: Arc<PathBuf>,
+    question: Question,
+) -> anyhow::Result<()> {
+    let data_v: Vec<String> = question
+        .answer
+        .chars()
+        .chunks(2048)
+        .into_iter()
+        .map(|chunk| chunk.collect::<String>())
+        .collect();
+    for data in data_v {
+        bot.send_message(msg.chat.id, data).await.unwrap();
+    }
+    if let Some(att) = question.attachment {
+        let filepath = static_dir.join(att);
+        if filepath.is_file() {
+            bot.send_document(msg.chat.id, InputFile::file(filepath))
+                .await?;
+        } else {
+            log::error!("File {:#?} is not found!", filepath);
+        }
+    };
+    Ok(())
+}
+
 async fn on_question_select(
     bot: AutoSend<Bot>,
     msg: Message,
@@ -87,42 +120,33 @@ async fn on_question_select(
     conn: Arc<SqlitePool>,
     static_dir: Arc<PathBuf>,
 ) -> anyhow::Result<()> {
-    let text = msg.text().unwrap_or("unknown");
+    let text = match msg.text() {
+        Some(text) => text,
+        None => {
+            bot.send_message(msg.chat.id, "Please select the question".to_string())
+                .reply_markup(make_questions_keyboard(conn.borrow(), category.as_str()).await?)
+                .await?;
+            return Ok(());
+        }
+    };
     match text {
         "Go Back" => {
             dialogue.reset().await?;
             bot.send_message(msg.chat.id, "Main menu")
-                .reply_markup(make_main_menu(conn.borrow()).await?)
+                .reply_markup(make_categories_keyboard(conn.borrow()).await?)
                 .await?;
         }
         selected_question => {
-            if let Ok(question) =
-                db::questions::get_question(conn.borrow(), selected_question).await
-            {
-                let data_v: Vec<String> = question
-                    .answer
-                    .chars()
-                    .chunks(2048)
-                    .into_iter()
-                    .map(|chunk| chunk.collect::<String>())
-                    .collect();
-                for data in data_v {
-                    bot.send_message(msg.chat.id, data).await.unwrap();
+            match db::questions::get_question(conn.borrow(), selected_question).await {
+                Ok(question) => reply_with_answer(bot, msg, static_dir, question).await?,
+                Err(_) => {
+                    bot.send_message(msg.chat.id, "Question does not exist".to_string())
+                        .reply_markup(
+                            make_questions_keyboard(conn.borrow(), category.as_str()).await?,
+                        )
+                        .await?;
                 }
-                if let Some(att) = question.attachment {
-                    let filepath = static_dir.join(att);
-                    if filepath.is_file() {
-                        bot.send_document(msg.chat.id, InputFile::file(filepath))
-                            .await?;
-                    } else {
-                        log::error!("File {:#?} is not found!", filepath);
-                    }
-                }
-            } else {
-                bot.send_message(msg.chat.id, "Question does not exist".to_string())
-                    .reply_markup(make_questions(conn.borrow(), category.as_str()).await?)
-                    .await?;
-            }
+            };
         }
     }
     Ok(())
@@ -140,7 +164,7 @@ async fn on_category_select(
             category: category.to_string(),
         })
         .await?;
-    match make_questions(conn.borrow(), category).await {
+    match make_questions_keyboard(conn.borrow(), category).await {
         Ok(keyboard) => {
             bot.send_message(msg.chat.id, format!("You chose category {}", category))
                 .reply_markup(keyboard)
@@ -159,7 +183,6 @@ async fn handle_private_chat_member(
     _bot: AutoSend<Bot>,
     msg: ChatMemberUpdated,
     storage: Arc<SqliteStorage<Json>>,
-    conn: Arc<SqlitePool>,
 ) -> anyhow::Result<()> {
     let dialogue: Dialogue<State, SqliteStorage<Json>> = Dialogue::new(storage, msg.chat.id);
     match msg.new_chat_member.kind {
@@ -172,16 +195,13 @@ async fn handle_private_chat_member(
         }
         ChatMemberKind::Member => {
             log::info!("New user {:?} connected", msg.from);
-            if !auth::auth_user(conn.borrow(), &msg.from).await? {
-                dialogue.update(State::Blocked).await?;
-            }
         }
         kind => log::info!("Unsupported member kind{:?}", kind),
     }
     Ok(())
 }
 
-async fn handle_commands(
+async fn on_commands(
     bot: AutoSend<Bot>,
     msg: Message,
     cmd: Command,
@@ -190,14 +210,9 @@ async fn handle_commands(
 ) -> anyhow::Result<()> {
     match cmd {
         Command::Start => {
-            if !auth::auth_user(conn.borrow(), msg.from().unwrap()).await? {
-                dialogue.update(State::Blocked).await?;
-                handle_blocked(bot, msg).await?;
-                return Ok(());
-            }
             dialogue.reset().await?;
             bot.send_message(msg.chat.id, "Main menu")
-                .reply_markup(make_main_menu(conn.borrow()).await?)
+                .reply_markup(make_categories_keyboard(conn.borrow()).await?)
                 .await?
         }
         Command::Help => {
@@ -209,34 +224,52 @@ async fn handle_commands(
     Ok(())
 }
 
-async fn handle_blocked(bot: AutoSend<Bot>, msg: Message) -> anyhow::Result<()> {
+async fn handle_not_authenticated(bot: AutoSend<Bot>, msg: Message) -> anyhow::Result<()> {
     bot.send_message(
         msg.chat.id,
         "You are not authorized to use this bot, contact the admin for authentication",
     )
+    .reply_markup(KeyboardRemove::new())
     .await?;
     Ok(())
+}
+
+// return true when user is _not_ authenticated
+async fn auth_failed(msg: Message, conn: Arc<SqlitePool>) -> bool {
+    !auth::auth_user(&conn, msg.from().expect("Got message not from a user?"))
+        .await
+        .map_err(|err| {
+            log::warn!("Unable to authenticate user {:?}: {}", msg.from(), err);
+            err
+        })
+        .unwrap_or(false)
 }
 
 pub fn make_private_chat_branch(
 ) -> Handler<'static, DependencyMap, anyhow::Result<()>, DpHandlerDescription> {
     let commands_handler = dptree::entry()
-        .enter_dialogue::<Message, SqliteStorage<Json>, State>()
         .filter_command::<Command>()
-        .endpoint(handle_commands);
+        .endpoint(on_commands);
 
     let dialogues_handler = dptree::entry()
-        .enter_dialogue::<Message, SqliteStorage<Json>, State>()
         .branch(dptree::case![State::ShowingCategories].endpoint(on_category_select))
-        .branch(dptree::case![State::ShowingQuestions { category }].endpoint(on_question_select))
-        .branch(dptree::case![State::Blocked].endpoint(handle_blocked));
+        .branch(dptree::case![State::ShowingQuestions { category }].endpoint(on_question_select));
 
-    let messages_handler = Update::filter_message()
+    // if user is not authenticated - display "blocked" message
+    let auth_handler = dptree::entry()
+        .filter_async(|msg: Message, conn: Arc<SqlitePool>| async move {
+            auth_failed(msg, conn).await
+        })
+        .endpoint(handle_not_authenticated);
+
+    let messages_handler = dptree::entry()
+        .enter_dialogue::<Message, SqliteStorage<Json>, State>()
+        .branch(auth_handler)
         .branch(commands_handler)
         .branch(dialogues_handler);
 
     return dptree::entry()
-        .branch(messages_handler)
+        .branch(Update::filter_message().chain(messages_handler))
         .branch(Update::filter_my_chat_member().endpoint(handle_private_chat_member));
 }
 

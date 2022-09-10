@@ -6,6 +6,7 @@ use sqlx::SqlitePool;
 
 #[derive(Deserialize)]
 struct NewUser {
+    id: i64,
     username: String,
     first_name: String,
     last_name: Option<String>,
@@ -24,6 +25,7 @@ async fn create_user(user: Json<NewUser>, pool: &State<SqlitePool>) -> JsonResul
     let user = user.into_inner();
     let user_id = db::users::create_user(
         pool,
+        user.id,
         &user.username,
         &user.first_name,
         user.last_name.as_deref(),

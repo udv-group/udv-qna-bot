@@ -2,7 +2,7 @@ version: "3.9"
 services:
   bot:
     container_name: bot
-    image: udv-qna-bot:latest
+    image: ${BOT_IMAGE_NAME:-udv-qna-bot}:latest
     build:
       context: .
       dockerfile: ./bot/Dockerfile
@@ -16,7 +16,7 @@ services:
        STATIC_DIR: /static
   cms:
     container_name: cms
-    image: udv-qna-cms:latest
+    image: ${CMS_IMAGE_NAME:-udv-qna-cms}:latest
     build:
       context: .
       dockerfile: ./cms/Dockerfile
@@ -26,4 +26,4 @@ services:
        DB_PATH: /data/bot.db
        STATIC_DIR: /static
     ports:
-      - "8080:8000"
+      - "${CMS_BIND_PORT:-8080}:8000"

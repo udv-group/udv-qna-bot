@@ -82,7 +82,7 @@ async fn update_question(question: Form<QuestionUpdate<'_>>, pool: &State<Sqlite
     let static_dir =
         PathBuf::from(dotenv::var("STATIC_DIR").expect("Variable STATIC_DIR should be set"));
     let mut question = question.into_inner();
-    let old_question = db::questions::get_question(pool, question.question.as_str())
+    let old_question = db::questions::get_question_by_id(pool, question.id)
         .await
         .unwrap();
     let mut filename: Option<String> = old_question.attachment; // FIXME: add ability to remove attached files

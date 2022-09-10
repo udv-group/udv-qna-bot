@@ -36,6 +36,18 @@ pub async fn get_question(pool: &SqlitePool, question: &str) -> sqlx::Result<Que
     .await
 }
 
+pub async fn get_question_by_id(pool: &SqlitePool, id: i64) -> sqlx::Result<Question> {
+    sqlx::query_as!(
+        Question,
+        r#"
+        SELECT * FROM questions WHERE questions.id = ?1
+        "#,
+        id
+    )
+    .fetch_one(pool)
+    .await
+}
+
 pub async fn get_questions(pool: &SqlitePool) -> sqlx::Result<Vec<Question>> {
     sqlx::query_as!(
         Question,

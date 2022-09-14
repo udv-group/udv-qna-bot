@@ -12,7 +12,6 @@ COPY ./Cargo.toml Cargo.toml
 COPY ./Cargo.lock Cargo.lock
 COPY ./bot/Cargo.toml bot/Cargo.toml
 COPY ./db/Cargo.toml db/Cargo.toml
-COPY ./db/sqlx-data.json db/sqlx-data.json
 COPY ./cms/Cargo.toml cms/Cargo.toml
 
 RUN apt-get update && apt-get install libssl-dev libsqlite3-dev pkg-config -y
@@ -24,6 +23,7 @@ RUN rm db/src/*.rs
 
 COPY ./bot/src bot/src
 COPY ./db/src db/src
+COPY ./db/sqlx-data.json db/sqlx-data.json
 COPY ./db/migrations db/migrations
 
 RUN rm /build/target/release/deps/bot*

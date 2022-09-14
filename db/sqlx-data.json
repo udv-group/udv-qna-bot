@@ -100,6 +100,16 @@
       ]
     }
   },
+  "22878b2600d7bafb026ecae6fae8bb5e8ad2888606b16e9b70ed16e7ba9dc4e3": {
+    "query": "\n        INSERT INTO users (id, username, first_name, last_name, is_admin, active) VALUES(?1, ?2, ?3, ?4, ?5, ?6)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 6
+      },
+      "nullable": []
+    }
+  },
   "24c549ba95c88259c00e2b7e48d7d38d4468ff39def0f0a5c2c367e3f2133c96": {
     "query": "\n        DELETE FROM questions WHERE questions.id = ?1\n        ",
     "describe": {
@@ -118,6 +128,48 @@
         "Right": 1
       },
       "nullable": []
+    }
+  },
+  "42630695797644c3c01dba66f7e471a96748af60b5824ae58902a855e71668f3": {
+    "query": "\n        SELECT * FROM questions WHERE questions.id = ?1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "category",
+          "ordinal": 1,
+          "type_info": "Int64"
+        },
+        {
+          "name": "question",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "answer",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "attachment",
+          "ordinal": 4,
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        true,
+        false,
+        false,
+        true
+      ]
     }
   },
   "4f63620b9f092d5ee629bef5b2d6b6f3251f27a33746fb1e0518e59f93764d80": {
@@ -192,16 +244,6 @@
       "columns": [],
       "parameters": {
         "Right": 5
-      },
-      "nullable": []
-    }
-  },
-  "8d295a00285e82121f5218baa575a699bc035902b5eca4f207dbc328fc95546a": {
-    "query": "\n        INSERT INTO users (username, first_name, last_name) VALUES(?1, ?2, ?3)\n        ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 3
       },
       "nullable": []
     }
@@ -288,6 +330,16 @@
       "nullable": []
     }
   },
+  "bd5fd5b5f2b8a55ed71739ecbb7324ed348fe0261777cd0a464c221a6b4ea321": {
+    "query": "\n        UPDATE users SET username=?1, first_name=?2, last_name=?3, is_admin=?4, active=?5 WHERE users.id = ?6\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 6
+      },
+      "nullable": []
+    }
+  },
   "f52de2da363d8bd000378257bd31f20880964105209a457fd451077b428f058d": {
     "query": "\n        DELETE FROM users WHERE users.id = ?1\n        ",
     "describe": {
@@ -342,16 +394,6 @@
   },
   "f861b24d14e649d2d9548d1fde3f658688e845cf34f8582fe7eca2f4c985172e": {
     "query": "\nINSERT INTO questions (category, question, answer, attachment) VALUES (?1, ?2, ?3, ?4)\n        ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 4
-      },
-      "nullable": []
-    }
-  },
-  "fc4a2dc1d69776dc2b8b21cbdb9b3d03ddb27b743c8459ca57c07476bfd12937": {
-    "query": "\n        UPDATE users SET username=?1, first_name=?2, last_name=?3 WHERE users.id = ?4\n        ",
     "describe": {
       "columns": [],
       "parameters": {

@@ -37,7 +37,7 @@ pub async fn get_users(pool: &SqlitePool) -> sqlx::Result<Vec<User>> {
 pub async fn create_user(
     pool: &SqlitePool,
     id: i64,
-    username: &str,
+    username: Option<&str>,
     first_name: &str,
     last_name: Option<&str>,
     is_admin: bool,
@@ -109,7 +109,7 @@ pub async fn import_users(pool: &SqlitePool, users: Vec<User>) -> sqlx::Result<(
             create_user(
                 pool,
                 user.id,
-                &user.username.unwrap_or_else(|| "".to_string()),
+                user.username.as_deref(),
                 &user.first_name,
                 user.last_name.as_deref(),
                 user.is_admin,

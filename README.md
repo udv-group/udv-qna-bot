@@ -15,10 +15,16 @@ Q&A bot for internal use at UDV
 Set the environmental variables in .env file
 ```
 TELOXIDE_TOKEN=<Your token here>
-DB_PATH=<Absoulute path to your databse>
+DB_DIR=<Absolute path to your database directory>
 STATIC_DIR=./static
 USE_AUTH=false
 ```
+
+Create database file
+```
+touch <Absolute path to your database directory>/bot.db
+```
+
 Build images and run with docker-compose
 ```
 $ docker-compose build
@@ -37,8 +43,8 @@ Get yourself a token from [@Botfather](https://t.me/botfather). It looks somethi
 Set the environmental variables in .env file
 ```
 TELOXIDE_TOKEN=<Your token here>
-DB_PATH=<Absoulute path to your databse>
-DATABASE_URL="sqlite:${DB_PATH}"
+DB_PATH=<Absolute path to your database>
+DATABASE_URL="sqlite:<Absolute path to your database>"
 STATIC_DIR=./static
 USE_AUTH=false
 ROCKET_CONFIG=./cms/Rocket.toml

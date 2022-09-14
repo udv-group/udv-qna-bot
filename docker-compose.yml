@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: ./bot/Dockerfile
     volumes:
-      - ${DB_PATH:-./database/bot.db}:/data/bot.db
+      - ${DB_DIR:-./database}:/data
       - ${STATIC_DIR:-./static}:/static
     environment:
        DB_PATH: /data/bot.db

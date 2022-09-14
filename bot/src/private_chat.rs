@@ -1,3 +1,4 @@
+use anyhow::bail;
 use db::Question;
 use itertools::Itertools;
 use sqlx::SqlitePool;
@@ -62,7 +63,9 @@ async fn make_questions_keyboard(
         .into_iter()
         .map(|question| question.question)
         .collect();
-
+    if results.len() == 0 {
+        bail!("Unknown category {}", category);
+    }
     make_keyboard(results, 1, true)
 }
 
@@ -140,11 +143,12 @@ async fn on_question_select(
             match db::questions::get_question(conn.borrow(), selected_question).await {
                 Ok(question) => reply_with_answer(bot, msg, static_dir, question).await?,
                 Err(_) => {
-                    bot.send_message(msg.chat.id, "Question does not exist".to_string())
-                        .reply_markup(
-                            make_questions_keyboard(conn.borrow(), category.as_str()).await?,
-                        )
-                        .await?;
+                    bot.send_message(
+                        msg.chat.id,
+                        format!("Unknown question: {}", selected_question),
+                    )
+                    .reply_markup(make_questions_keyboard(conn.borrow(), category.as_str()).await?)
+                    .await?;
                 }
             };
         }
@@ -158,12 +162,15 @@ async fn on_category_select(
     dialogue: MyDialogue,
     conn: Arc<SqlitePool>,
 ) -> anyhow::Result<()> {
-    let category = msg.text().unwrap_or("unknown");
-    dialogue
-        .update(State::ShowingQuestions {
-            category: category.to_string(),
-        })
-        .await?;
+    let category = match msg.text() {
+        Some(text) => text,
+        None => {
+            bot.send_message(msg.chat.id, "Please select the category")
+                .reply_markup(make_categories_keyboard(conn.borrow()).await?)
+                .await?;
+            return Ok(());
+        }
+    };
     match make_questions_keyboard(conn.borrow(), category).await {
         Ok(keyboard) => {
             bot.send_message(msg.chat.id, format!("You chose category {}", category))
@@ -174,8 +181,14 @@ async fn on_category_select(
             log::warn!("Exception getting category {}", e);
             bot.send_message(msg.chat.id, format!("Unknown category: {}", category))
                 .await?;
+            return Ok(());
         }
     }
+    dialogue
+        .update(State::ShowingQuestions {
+            category: category.to_string(),
+        })
+        .await?;
     Ok(())
 }
 
@@ -257,9 +270,9 @@ pub fn make_private_chat_branch(
 
     // if user is not authenticated - display "blocked" message
     let auth_handler = dptree::entry()
-        .filter_async(|msg: Message, conn: Arc<SqlitePool>| async move {
-            auth_failed(msg, conn).await
-        })
+        .filter_async(
+            |msg: Message, conn: Arc<SqlitePool>| async move { auth_failed(msg, conn).await },
+        )
         .endpoint(handle_not_authenticated);
 
     let messages_handler = dptree::entry()

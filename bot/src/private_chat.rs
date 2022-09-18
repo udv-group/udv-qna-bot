@@ -46,7 +46,7 @@ impl Default for State {
 }
 
 async fn make_categories_keyboard(conn: &SqlitePool) -> anyhow::Result<KeyboardMarkup> {
-    let results: Vec<String> = db::categories::get_categories(conn)
+    let results: Vec<String> = db::categories::get_public_categories(conn)
         .await?
         .into_iter()
         .map(|category_| category_.name)
@@ -58,13 +58,17 @@ async fn make_questions_keyboard(
     conn: &SqlitePool,
     category: &str,
 ) -> anyhow::Result<KeyboardMarkup> {
-    let results: Vec<String> = db::questions::get_questions_by_category(conn, category)
-        .await?
-        .into_iter()
-        .map(|question| question.question)
-        .collect();
+    let results: Vec<String> =
+        db::questions::get_public_questions_for_public_category(conn, category)
+            .await?
+            .into_iter()
+            .map(|question| question.question)
+            .collect();
     if results.len() == 0 {
-        bail!("Unknown category {}", category);
+        bail!(
+            "Category {} is unknown or has no available questions",
+            category
+        );
     }
     make_keyboard(results, 1, true)
 }
@@ -179,8 +183,11 @@ async fn on_category_select(
         }
         Err(e) => {
             log::warn!("Exception getting category {}", e);
-            bot.send_message(msg.chat.id, format!("Unknown category: {}", category))
-                .await?;
+            bot.send_message(
+                msg.chat.id,
+                format!("Category {} is unknown or has no questions", category),
+            )
+            .await?;
             return Ok(());
         }
     }

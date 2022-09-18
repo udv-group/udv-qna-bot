@@ -16,6 +16,7 @@
               <th scope="col">Category</th>
               <th scope="col">Question</th>
               <th scope="col">Answer</th>
+              <th scope="col">Hidden</th>
               <th scope="col">Attachment</th>
               <th scope="col"></th>
             </tr>
@@ -27,19 +28,21 @@
               <td>{{question.category}}</td>
               <td>{{question.question}}</td>
               <td>{{question.answer_trunk}}</td>
+              <td>{{question.hidden}}</td>
               <td>{{question.attachment}}</td>
               <td>
 
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal"
                   data-bs-id="{{question.id}}" data-bs-category="{{question.category}}"
                   data-bs-question="{{question.question}}" data-bs-answer="{{question.answer}}"
-                  data-bs-attachment="{{question.attachment}}">
+                  data-bs-attachment="{{question.attachment}}" data-bs-hidden="{{question.hidden}}">
                   Edit
                 </button>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                   data-bs-target="#changeAttachmentModal" data-bs-id="{{question.id}}"
                   data-bs-category="{{question.category}}" data-bs-question="{{question.question}}"
-                  data-bs-answer="{{question.answer}}" data-bs-attachment="{{question.attachment}}">
+                  data-bs-answer="{{question.answer}}" data-bs-attachment="{{question.attachment}}"
+                  data-bs-hidden="{{question.hidden}}">
                   Edit Attachment
                 </button>
                 <button type="button" class="btn btn-danger"
@@ -79,6 +82,10 @@
             <label for="answer-text" class="col-form-label">Answer:</label>
             <textarea class="form-control" id="answer-text" name="answer"></textarea>
           </div>
+          <div class="mb-3">
+            <label for="question-hidden" class="col-form-label">Hidden:</label>
+            <input type="checkbox" id="question-hidden" name="hidden">
+          </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             <button type="submit" class="btn btn-primary" data-bs-dismiss="modal" data-bs-target="#editModal">Save
@@ -116,6 +123,10 @@
             <label for="attachment" class="form-label">Attachment</label>
             <input class="form-control" type="file" id="attachment" name="attachment">
           </div>
+          <div class="mb-3">
+            <label for="question-hidden" class="col-form-label">Hidden:</label>
+            <input type="checkbox" id="question-hidden" name="hidden">
+          </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             <button type="submit" class="btn btn-primary" data-bs-dismiss="modal"
@@ -143,6 +154,7 @@
           <input type="hidden" id="category-text" name="category">
           <input type="hidden" id="question-text" name="question">
           <input type="hidden" id="answer-text" name="answer">
+          <input type="hidden" id="question-hidden" name="hidden">
 
           <div class="mb-3">
             <label for="attachment" class="form-label">Attachment</label>
@@ -176,6 +188,7 @@
       const question = button.getAttribute('data-bs-question')
       const answer = button.getAttribute('data-bs-answer')
       const att = button.getAttribute('data-bs-attachment')
+      const hidden = button.getAttribute('data-bs-hidden') === 'true'
       // If necessary, you could initiate an AJAX request here
       // and then do the updating in a callback.
       //
@@ -183,6 +196,7 @@
       modal.querySelector('.modal-body input[name="id"]').value = id
       modal.querySelector('.modal-body input[name="category"]').value = category
       modal.querySelector('.modal-body input[name="question"]').value = question
+      modal.querySelector('.modal-body input[name="hidden"]').checked = hidden
       if (modal.id === "editModal") {
         modal.querySelector('.modal-body textarea[id="answer-text"]').value = answer
       } else {

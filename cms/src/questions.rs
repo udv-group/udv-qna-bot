@@ -18,6 +18,7 @@ struct QuestionUpdate<'r> {
     question: String,
     answer: String,
     attachment: Option<TempFile<'r>>,
+    hidden: bool,
 }
 
 #[derive(FromForm)]
@@ -26,6 +27,7 @@ struct NewQuestion<'r> {
     question: String,
     answer: String,
     attachment: TempFile<'r>,
+    hidden: bool,
 }
 
 #[derive(Serialize)]
@@ -35,6 +37,7 @@ struct ShowQuestion {
     question: String,
     answer: String,
     attachment: Option<String>,
+    hidden: bool,
     answer_trunk: String,
 }
 
@@ -48,7 +51,7 @@ fn find_nex_char_boundary(index: usize, string: &str) -> usize {
 
 #[get("/questions")]
 async fn get_questions(pool: &State<SqlitePool>) -> Template {
-    let questions: Vec<ShowQuestion> = db::questions::get_questions(pool)
+    let questions: Vec<ShowQuestion> = db::questions::get_all_questions(pool)
         .await
         .unwrap()
         .into_iter()
@@ -64,6 +67,7 @@ async fn get_questions(pool: &State<SqlitePool>) -> Template {
                 question: q.question,
                 answer: q.answer,
                 attachment: q.attachment,
+                hidden: q.hidden,
                 answer_trunk: trunk,
             }
         })
@@ -110,6 +114,7 @@ async fn update_question(question: Form<QuestionUpdate<'_>>, pool: &State<Sqlite
         category: question.category,
         answer: question.answer,
         question: question.question,
+        hidden: question.hidden,
         attachment: filename,
     };
     db::questions::update_question(pool, question)
@@ -143,6 +148,7 @@ async fn create_question(
         question.answer.as_str(),
         question.category,
         filename.as_deref(),
+        question.hidden,
     )
     .await
     .unwrap();

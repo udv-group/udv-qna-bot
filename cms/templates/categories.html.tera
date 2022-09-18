@@ -13,6 +13,7 @@
           <tr>
             <th scope="col">#</th>
             <th scope="col">name</th>
+            <th scope="col">hidden</th>
             <th scope="col"></th>
           </tr>
         </thead>
@@ -21,9 +22,10 @@
           <tr>
             <th scope="row">{{category.id}}</th>
             <td>{{category.name}}</td>
+            <td>{{category.hidden}}</td>
             <td>
               <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal"
-                data-bs-id="{{category.id}}" data-bs-name="{{category.name}}">
+                data-bs-id="{{category.id}}" data-bs-name="{{category.name}}" data-bs-hidden="{{category.hidden}}">
                 Edit
               </button>
               <button type="button" class="btn btn-danger"
@@ -51,8 +53,12 @@
             <input type="hidden" id="category-id" name="id">
           </div>
           <div class="mb-3">
-            <label for="category-text" class="col-form-label">Name:</label>
+            <label for="category-name" class="col-form-label">Name:</label>
             <input type="text" class="form-control" id="category-name" name="name">
+          </div>
+          <div class="mb-3">
+            <label for="category-hidden" class="col-form-label">Hidden:</label>
+            <input type="checkbox" id="category-hidden" name="hidden">
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -79,6 +85,10 @@
             <label for="category-text" class="col-form-label">Name:</label>
             <input type="text" class="form-control" id="category-text" name="name">
           </div>
+          <div class="mb-3">
+            <label for="category-hidden" class="col-form-label">Hidden:</label>
+            <input type="checkbox" id="category-hidden" name="hidden">
+          </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             <button type="submit" class="btn btn-primary" data-bs-dismiss="modal"
@@ -99,12 +109,14 @@
     // Extract info from data-bs-* attributes
     const id = button.getAttribute('data-bs-id')
     const name = button.getAttribute('data-bs-name')
+    const hidden = button.getAttribute('data-bs-hidden') === 'true'
     // If necessary, you could initiate an AJAX request here
     // and then do the updating in a callback.
     //
     // Update the modal's content.
     editModal.querySelector('.modal-body input[name="id"]').value = id
     editModal.querySelector('.modal-body input[name="name"]').value = name
+    editModal.querySelector('.modal-body input[name="hidden"]').checked = hidden
 
   })
 

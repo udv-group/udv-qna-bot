@@ -6,6 +6,7 @@ use std::collections::HashSet;
 pub struct Category {
     pub id: i64,
     pub name: String,
+    pub hidden: bool,
 }
 
 pub async fn get_category(pool: &SqlitePool, id: i64) -> sqlx::Result<Category> {
@@ -20,14 +21,15 @@ pub async fn get_category(pool: &SqlitePool, id: i64) -> sqlx::Result<Category> 
     .await
 }
 
-pub async fn create_category(pool: &SqlitePool, name: &str) -> sqlx::Result<i64> {
+pub async fn create_category(pool: &SqlitePool, name: &str, hidden: bool) -> sqlx::Result<i64> {
     let mut conn = pool.acquire().await?;
 
     let id = sqlx::query!(
         r#"
-INSERT INTO categories (name) VALUES (?1)
+INSERT INTO categories (name, hidden) VALUES (?1, ?2)
         "#,
-        name
+        name,
+        hidden
     )
     .execute(&mut conn)
     .await?
@@ -41,9 +43,10 @@ pub async fn update_category(pool: &SqlitePool, category: Category) -> sqlx::Res
 
     sqlx::query!(
         r#"
-        UPDATE categories SET name=?1 WHERE categories.id = ?2
+        UPDATE categories SET name=?1, hidden=?2 WHERE categories.id = ?3
         "#,
         category.name,
+        category.hidden,
         category.id
     )
     .execute(&mut conn)
@@ -51,13 +54,22 @@ pub async fn update_category(pool: &SqlitePool, category: Category) -> sqlx::Res
     Ok(())
 }
 
-pub async fn get_categories(pool: &SqlitePool) -> sqlx::Result<Vec<Category>> {
+pub async fn get_all_categories(pool: &SqlitePool) -> sqlx::Result<Vec<Category>> {
     sqlx::query_as!(
         Category,
         r#"
-SELECT id, name
-FROM categories
-ORDER BY id
+        SELECT * FROM categories ORDER BY id
+        "#
+    )
+    .fetch_all(pool)
+    .await
+}
+
+pub async fn get_public_categories(pool: &SqlitePool) -> sqlx::Result<Vec<Category>> {
+    sqlx::query_as!(
+        Category,
+        r#"
+        SELECT * FROM categories WHERE hidden = FALSE ORDER BY id
         "#
     )
     .fetch_all(pool)
@@ -79,7 +91,7 @@ pub async fn delete_category(pool: &SqlitePool, category_id: i64) -> sqlx::Resul
 }
 
 pub async fn import_categories(pool: &SqlitePool, categories: Vec<Category>) -> sqlx::Result<()> {
-    let existing_categories = get_categories(pool).await?;
+    let existing_categories = get_all_categories(pool).await?;
     let existing_categories_ids: HashSet<i64> = existing_categories.iter().map(|c| c.id).collect();
     let new_categories_ids: HashSet<i64> = categories.iter().map(|c| c.id).collect();
     for category_id in existing_categories_ids.difference(&new_categories_ids) {
@@ -89,7 +101,7 @@ pub async fn import_categories(pool: &SqlitePool, categories: Vec<Category>) -> 
         if existing_categories_ids.contains(&category.id) {
             update_category(pool, category).await?;
         } else {
-            create_category(pool, category.name.as_str()).await?;
+            create_category(pool, category.name.as_str(), category.hidden).await?;
         }
     }
     Ok(())

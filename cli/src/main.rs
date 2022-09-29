@@ -55,8 +55,8 @@ fn read_from<T: DeserializeOwned>(path: PathBuf) -> Result<Vec<T>, Box<dyn Error
     Ok(out)
 }
 async fn export_data(pool: &SqlitePool, path: PathBuf) -> Result<(), Box<dyn Error>> {
-    let categories = db::categories::get_categories(&pool).await?;
-    let questions = db::questions::get_questions(&pool).await?;
+    let categories = db::categories::get_all_categories(&pool).await?;
+    let questions = db::questions::get_all_questions(&pool).await?;
     let users = db::users::get_users(&pool).await?;
     if !path.exists() {
         std::fs::create_dir_all(&path)?

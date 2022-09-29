@@ -7,11 +7,11 @@ edition = "2021"
 teloxide = { version = "0.10.1", features = ["auto-send", "macros", "sqlite-storage"] }
 serde = { version = "1.0", features = ["derive"]  }
 serde_json = { version = "1.0" }
-sqlx = { version = "0.5", features = [ "runtime-tokio-native-tls" , "sqlite", "migrate", "offline" ] }
+sqlx.workspace = true
 db = {path = "../db"}
 anyhow = "1.0"
 itertools = "0.10"
-dotenv = "0.15"
+dotenv.workspace = true
 
 tokio = { version =  "1.15", features = ["full"] }
 log = "0.4.8"

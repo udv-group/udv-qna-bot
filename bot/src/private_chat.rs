@@ -1,6 +1,6 @@
 use anyhow::bail;
-use db::Question;
 use itertools::Itertools;
+use models::Question;
 use sqlx::SqlitePool;
 use std::borrow::Borrow;
 

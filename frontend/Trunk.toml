@@ -1,0 +1,5 @@
+[build]
+dist = "../.dist"
+public_url = "/public/"
+[clean]
+dist = "../.dist"

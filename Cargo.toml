@@ -3,7 +3,9 @@
 members = [
     "bot",
     "cms",
-    "db"
+    "db",
+    "frontend",
+    "models",
 ]
 exclude = ["cli"]
 

@@ -1,8 +1,12 @@
+use models::Category;
 use rocket::form::{Form, FromForm};
 use rocket::response::Redirect;
+use rocket::serde::json::Json;
 use rocket::{Route, State};
 use rocket_dyn_templates::{context, Template};
 use sqlx::SqlitePool;
+
+use crate::error_handlers::JsonResult;
 
 #[derive(FromForm)]
 struct CategoryUpdate {
@@ -19,15 +23,9 @@ struct NewCategory {
 }
 
 #[get("/categories")]
-async fn get_categories(pool: &State<SqlitePool>) -> Template {
-    let categories = db::categories::get_all_categories(pool).await.unwrap();
-    Template::render(
-        "categories",
-        context! {
-            categories: categories,
-            title: "Categories"
-        },
-    )
+async fn get_categories(pool: &State<SqlitePool>) -> JsonResult<Vec<Category>> {
+    let categories = db::categories::get_all_categories(pool).await?;
+    Ok(Json(categories))
 }
 
 #[post("/categories/new", data = "<category>")]

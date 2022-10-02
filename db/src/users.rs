@@ -1,16 +1,6 @@
-use serde::{Deserialize, Serialize};
+use models::User;
 use sqlx::SqlitePool;
 use std::collections::HashSet;
-
-#[derive(Serialize, Deserialize)]
-pub struct User {
-    pub id: i64,
-    pub username: Option<String>,
-    pub first_name: String,
-    pub last_name: Option<String>,
-    pub is_admin: bool,
-    pub active: bool,
-}
 
 pub async fn get_user(pool: &SqlitePool, id: i64) -> sqlx::Result<User> {
     sqlx::query_as!(

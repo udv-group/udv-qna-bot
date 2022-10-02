@@ -1,17 +1,6 @@
-use serde::{Deserialize, Serialize};
+use models::Question;
 use sqlx::SqlitePool;
 use std::collections::HashSet;
-
-#[derive(Serialize, Deserialize)]
-pub struct Question {
-    pub id: i64,
-    pub category: Option<i64>,
-    pub question: String,
-    pub answer: String,
-    pub attachment: Option<String>,
-    pub hidden: bool,
-    pub ordering: i64,
-}
 
 pub async fn get_public_questions_for_public_category(
     pool: &SqlitePool,

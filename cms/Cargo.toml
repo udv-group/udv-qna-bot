@@ -12,3 +12,4 @@ sqlx.workspace = true
 db = {path = "../db"}
 serde = "1.0"
 dotenv.workspace = true
+models = {path = "../models"}

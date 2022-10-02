@@ -12,6 +12,7 @@ db = {path = "../db"}
 anyhow = "1.0"
 itertools = "0.10"
 dotenv.workspace = true
+models = {path = "../models"}
 
 tokio = { version =  "1.15", features = ["full"] }
 log = "0.4.8"

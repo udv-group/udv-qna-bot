@@ -3,7 +3,7 @@ mod error_handlers;
 mod questions;
 mod users;
 
-use rocket::{response::Redirect, Build};
+use rocket::{response::Redirect, Build, fs::FileServer};
 use rocket_dyn_templates::Template;
 
 #[macro_use]
@@ -21,5 +21,6 @@ pub async fn rocket() -> rocket::Rocket<Build> {
         .mount("/", users::routes())
         .mount("/", questions::routes())
         .mount("/", categories::routes())
+        .mount("/public", FileServer::from(".dist"))
         .attach(Template::fairing())
 }

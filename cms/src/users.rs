@@ -1,5 +1,5 @@
 use crate::error_handlers::{EmptyResult, JsonResult};
-use db::users::User;
+use models::User;
 use rocket::serde::{json::Json, Deserialize};
 use rocket::{Route, State};
 use sqlx::SqlitePool;

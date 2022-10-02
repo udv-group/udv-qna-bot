@@ -3,10 +3,6 @@ pub mod questions;
 pub mod users;
 use sqlx::sqlite::SqlitePool;
 
-pub use categories::Category;
-pub use questions::Question;
-pub use users::User;
-
 use sqlx::Error;
 
 pub async fn establish_connection(path: &str) -> Result<SqlitePool, Error> {

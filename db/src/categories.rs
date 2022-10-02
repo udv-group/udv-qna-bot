@@ -1,14 +1,6 @@
-use serde::{Deserialize, Serialize};
+use models::Category;
 use sqlx::SqlitePool;
 use std::collections::HashSet;
-
-#[derive(Serialize, Deserialize)]
-pub struct Category {
-    pub id: i64,
-    pub name: String,
-    pub hidden: bool,
-    pub ordering: i64,
-}
 
 pub async fn get_category(pool: &SqlitePool, id: i64) -> sqlx::Result<Category> {
     sqlx::query_as!(

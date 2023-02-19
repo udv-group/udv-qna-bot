@@ -1,4 +1,4 @@
-FROM rust:1.61-slim as builder
+FROM rust:1.67-slim as builder
 
 WORKDIR /build
 ENV SQLX_OFFLINE=true
@@ -9,7 +9,6 @@ RUN USER=root cargo new --bin cms
 
 
 COPY ./Cargo.toml Cargo.toml
-COPY ./Cargo.lock Cargo.lock
 COPY ./bot/Cargo.toml bot/Cargo.toml
 COPY ./db/Cargo.toml db/Cargo.toml
 COPY ./cms/Cargo.toml cms/Cargo.toml

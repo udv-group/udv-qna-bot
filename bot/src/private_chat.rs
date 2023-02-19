@@ -144,7 +144,7 @@ async fn on_question_select(
                 .await?;
         }
         selected_question => {
-            match db::questions::get_question(conn.borrow(), selected_question).await {
+            match db::questions::get_question(conn.borrow(), selected_question, &category).await {
                 Ok(question) => reply_with_answer(bot, msg, static_dir, question).await?,
                 Err(_) => {
                     bot.send_message(

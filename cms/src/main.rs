@@ -1,5 +1,4 @@
 use cms::rocket;
-use db;
 
 #[rocket::main]
 async fn main() {

@@ -1,4 +1,3 @@
-use dotenv;
 use sqlx::SqlitePool;
 use teloxide::types::User;
 
@@ -11,12 +10,12 @@ pub async fn auth_user(conn: &SqlitePool, user: &User) -> anyhow::Result<bool> {
         // todo: return false only on RowNotFound
         db::users::get_user(conn, user.id.0.try_into().unwrap())
             .await
-            .and_then(|user| Ok(user.active))
+            .map(|user| user.active)
             .or(Ok(false))
     } else {
-        if !db::users::get_user(conn, user.id.0.try_into().unwrap())
+        if db::users::get_user(conn, user.id.0.try_into().unwrap())
             .await
-            .is_ok()
+            .is_err()
         {
             db::users::create_user(
                 conn,

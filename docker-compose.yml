@@ -2,7 +2,7 @@ version: "3.9"
 services:
   bot:
     container_name: bot
-    image: ${BOT_IMAGE_NAME:-udv-qna-bot}:latest
+    image: ${BOT_IMAGE_NAME:-ghcr.io/mikhailantoshkin/udv-qna-bot}:${BOT_IMAGE_VERSION:-nightly}
     build:
       context: .
       dockerfile: ./bot/Dockerfile
@@ -16,7 +16,7 @@ services:
        STATIC_DIR: /static
   cms:
     container_name: cms
-    image: ${CMS_IMAGE_NAME:-udv-qna-cms}:latest
+    image: ${CMS_IMAGE_NAME:-ghcr.io/mikhailantoshkin/udv-qna-cms}:${CMS_IMAGE_VERSION:-nightly}
     build:
       context: .
       dockerfile: ./cms/Dockerfile

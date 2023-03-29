@@ -3,7 +3,6 @@ mod error_handlers;
 mod questions;
 mod users;
 
-use dotenv;
 use rocket::{response::Redirect, Build};
 use rocket_dyn_templates::Template;
 

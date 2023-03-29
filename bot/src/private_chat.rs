@@ -64,7 +64,7 @@ async fn make_questions_keyboard(
             .into_iter()
             .map(|question| question.question)
             .collect();
-    if results.len() == 0 {
+    if results.is_empty() {
         bail!(
             "Category {} is unknown or has no available questions",
             category

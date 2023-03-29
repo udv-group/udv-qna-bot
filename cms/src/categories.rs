@@ -1,4 +1,3 @@
-use db::categories::Category;
 use rocket::form::{Form, FromForm};
 use rocket::response::Redirect;
 use rocket::{Route, State};
@@ -16,6 +15,7 @@ struct CategoryUpdate {
 struct NewCategory {
     name: String,
     hidden: bool,
+    ordering: i64,
 }
 
 #[get("/categories")]
@@ -33,20 +33,20 @@ async fn get_categories(pool: &State<SqlitePool>) -> Template {
 #[post("/categories/new", data = "<category>")]
 async fn create_category(category: Form<NewCategory>, pool: &State<SqlitePool>) -> Redirect {
     let category = category.into_inner();
-    db::categories::create_category(pool, category.name.as_str(), category.hidden)
-        .await
-        .unwrap();
+    db::categories::create_category(
+        pool,
+        category.name.as_str(),
+        category.hidden,
+        category.ordering,
+    )
+    .await
+    .unwrap();
     Redirect::to(uri!(get_categories))
 }
 #[post("/categories", data = "<category>")]
 async fn update_category(category: Form<CategoryUpdate>, pool: &State<SqlitePool>) -> Redirect {
     let category = category.into_inner();
-    let category_update = Category {
-        id: category.id,
-        name: category.name,
-        hidden: category.hidden,
-    };
-    db::categories::update_category(pool, category_update)
+    db::categories::update_category(pool, category.id, category.name, category.hidden)
         .await
         .unwrap();
     Redirect::to(uri!(get_categories))

@@ -1,4 +1,0 @@
-[default]
-template_dir = "static"
-address = "0.0.0.0"
-template_dir = "templates"

@@ -10,6 +10,7 @@ pub struct Question {
     pub answer: String,
     pub attachment: Option<String>,
     pub hidden: bool,
+    pub ordering: i64,
 }
 
 pub async fn get_public_questions_for_public_category(
@@ -19,22 +20,24 @@ pub async fn get_public_questions_for_public_category(
     sqlx::query_as!(
         Question,
         r#"
-        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachment, questions.hidden 
+        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachment, questions.hidden, questions.ordering 
         FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1 AND categories.hidden = FALSE AND questions.hidden = FALSE
+        ORDER BY questions.ordering
         "#,
         category
     ).fetch_all(pool).await
 }
 
-pub async fn get_question(pool: &SqlitePool, question: &str, category: &str) -> sqlx::Result<Question> {
+pub async fn get_question(pool: &SqlitePool, question: &str, category: &str, category: &str) -> sqlx::Result<Question> {
     sqlx::query_as!(
         Question,
         r#"
-        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachment, questions.hidden
+        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachment, questions.hidden, questions.ordering, questions.ordering 
         FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1 AND questions.question = ?2
         "#,
         category,
-        question,
+        category,
+        question,,
     )
     .fetch_one(pool)
     .await
@@ -56,7 +59,7 @@ pub async fn get_all_questions(pool: &SqlitePool) -> sqlx::Result<Vec<Question>>
     sqlx::query_as!(
         Question,
         r#"
-        SELECT * FROM questions ORDER BY id 
+        SELECT * FROM questions ORDER BY ordering
         "#,
     )
     .fetch_all(pool)
@@ -67,7 +70,7 @@ pub async fn get_public_questions(pool: &SqlitePool) -> sqlx::Result<Vec<Questio
     sqlx::query_as!(
         Question,
         r#"
-        SELECT * FROM questions WHERE hidden = FALSE ORDER BY id
+        SELECT * FROM questions WHERE hidden = FALSE ORDER BY ordering
         "#,
     )
     .fetch_all(pool)
@@ -81,18 +84,20 @@ pub async fn create_question(
     category: Option<i64>,
     attachment: Option<&str>,
     hidden: bool,
+    ordering: i64,
 ) -> sqlx::Result<i64> {
     let mut conn = pool.acquire().await?;
 
     let id = sqlx::query!(
         r#"
-        INSERT INTO questions (category, question, answer, attachment, hidden) VALUES (?1, ?2, ?3, ?4, ?5)
+        INSERT INTO questions (category, question, answer, attachment, hidden, ordering) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
         "#,
         category,
         question,
         answer,
         attachment,
-        hidden
+        hidden,
+        ordering,
     )
     .execute(&mut conn)
     .await?
@@ -101,19 +106,27 @@ pub async fn create_question(
     Ok(id)
 }
 
-pub async fn update_question(pool: &SqlitePool, question: Question) -> sqlx::Result<()> {
+pub async fn update_question(
+    pool: &SqlitePool,
+    id: i64,
+    category: Option<i64>,
+    question: String,
+    answer: String,
+    attachment: Option<String>,
+    hidden: bool,
+) -> sqlx::Result<()> {
     let mut conn = pool.acquire().await?;
 
     sqlx::query!(
         r#"
         UPDATE questions SET category=?1, question=?2, answer=?3, attachment=?4, hidden=?5 WHERE questions.id = ?6
         "#,
-        question.category,
-        question.question,
-        question.answer,
-        question.attachment,
-        question.hidden,
-        question.id
+        category,
+        question,
+        answer,
+        attachment,
+        hidden,
+        id,
     )
     .execute(&mut conn)
     .await?;
@@ -134,6 +147,23 @@ pub async fn delete_question(pool: &SqlitePool, question_id: i64) -> sqlx::Resul
     Ok(())
 }
 
+pub async fn reorder_questions(pool: &SqlitePool, questions: Vec<Question>) -> sqlx::Result<()> {
+    let mut transaction = pool.begin().await?;
+    for question in questions {
+        sqlx::query!(
+            r#"
+            UPDATE questions SET ordering=?1 WHERE questions.id = ?2
+            "#,
+            question.ordering,
+            question.id,
+        )
+        .execute(&mut transaction)
+        .await?;
+    }
+    transaction.commit().await?;
+    Ok(())
+}
+
 pub async fn import_questions(pool: &SqlitePool, questions: Vec<Question>) -> sqlx::Result<()> {
     let existing_questions = get_all_questions(pool).await?;
     let existing_questions_ids: HashSet<i64> = existing_questions.iter().map(|q| q.id).collect();
@@ -143,7 +173,16 @@ pub async fn import_questions(pool: &SqlitePool, questions: Vec<Question>) -> sq
     }
     for question in questions {
         if existing_questions_ids.contains(&question.id) {
-            update_question(pool, question).await?;
+            update_question(
+                pool,
+                question.id,
+                question.category,
+                question.question,
+                question.answer,
+                question.attachment,
+                question.hidden,
+            )
+            .await?;
         } else {
             create_question(
                 pool,
@@ -152,6 +191,7 @@ pub async fn import_questions(pool: &SqlitePool, questions: Vec<Question>) -> sq
                 question.category,
                 question.attachment.as_deref(),
                 question.hidden,
+                question.ordering,
             )
             .await?;
         }

@@ -1,4 +1,3 @@
-use db::questions::Question;
 use rocket::response::Redirect;
 
 use rocket::{Route, State};
@@ -28,6 +27,7 @@ struct NewQuestion<'r> {
     answer: String,
     attachment: TempFile<'r>,
     hidden: bool,
+    ordering: i64,
 }
 
 #[derive(Serialize)]
@@ -109,17 +109,17 @@ async fn update_question(question: Form<QuestionUpdate<'_>>, pool: &State<Sqlite
             filename = None;
         }
     }
-    let question = Question {
-        id: question.id,
-        category: question.category,
-        answer: question.answer,
-        question: question.question,
-        hidden: question.hidden,
-        attachment: filename,
-    };
-    db::questions::update_question(pool, question)
-        .await
-        .unwrap();
+    db::questions::update_question(
+        pool,
+        question.id,
+        question.category,
+        question.question,
+        question.answer,
+        filename,
+        question.hidden,
+    )
+    .await
+    .unwrap();
     Redirect::to(uri!(get_questions))
 }
 
@@ -149,6 +149,7 @@ async fn create_question(
         question.category,
         filename.as_deref(),
         question.hidden,
+        question.ordering,
     )
     .await
     .unwrap();

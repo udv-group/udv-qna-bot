@@ -13,6 +13,7 @@ use sqlx::{Pool, Sqlite, SqlitePool};
 struct NewCategory {
     name: String,
     hidden: bool,
+    ordering: i64
 }
 
 async fn get_categories(State(pool): State<SqlitePool>) -> Json<Vec<Category>> {
@@ -23,7 +24,7 @@ async fn create_category(
     State(pool): State<SqlitePool>,
     Json(new_category): Json<NewCategory>,
 ) -> impl IntoResponse {
-    let id = db::categories::create_category(&pool, new_category.name.as_str(), new_category.hidden)
+    let id = db::categories::create_category(&pool, new_category.name.as_str(), new_category.hidden, new_category.ordering)
         .await
         .unwrap();
     Json(db::categories::get_category(&pool, id).await.unwrap())
@@ -34,7 +35,7 @@ async fn update_category(
     Json(category): Json<Category>,
 ) -> impl IntoResponse {
     let id = category.id;
-    db::categories::update_category(&pool, category)
+    db::categories::update_category(&pool, category.id, category.name, category.hidden)
         .await
         .unwrap();
     Json(db::categories::get_category(&pool, id).await.unwrap())

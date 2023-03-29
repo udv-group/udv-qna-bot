@@ -102,9 +102,9 @@ pub async fn delete_category(pool: &SqlitePool, category_id: i64) -> sqlx::Resul
     Ok(())
 }
 
-pub async fn reorder_categories(pool: &SqlitePool, questions: Vec<Category>) -> sqlx::Result<()> {
+pub async fn reorder_categories(pool: &SqlitePool, categories: Vec<Category>) -> sqlx::Result<()> {
     let mut transaction = pool.begin().await?;
-    for category in questions {
+    for category in categories {
         sqlx::query!(
             r#"
             UPDATE categories SET ordering=?1 WHERE categories.id = ?2

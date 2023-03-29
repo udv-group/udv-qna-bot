@@ -28,16 +28,15 @@ pub async fn get_public_questions_for_public_category(
     ).fetch_all(pool).await
 }
 
-pub async fn get_question(pool: &SqlitePool, question: &str, category: &str, category: &str) -> sqlx::Result<Question> {
+pub async fn get_question(pool: &SqlitePool, question: &str, category: &str) -> sqlx::Result<Question> {
     sqlx::query_as!(
         Question,
         r#"
-        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachment, questions.hidden, questions.ordering, questions.ordering 
+        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachment, questions.hidden, questions.ordering
         FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1 AND questions.question = ?2
         "#,
         category,
-        category,
-        question,,
+        question,
     )
     .fetch_one(pool)
     .await

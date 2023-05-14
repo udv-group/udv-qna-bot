@@ -4,6 +4,7 @@ use users::users_router;
 
 mod categories;
 mod users;
+mod questions;
 
 #[tokio::main]
 async fn main() {

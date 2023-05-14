@@ -1,17 +1,27 @@
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, types::Json};
 use std::collections::HashSet;
 
+type FileName = String;
+
 #[derive(Serialize, Deserialize)]
-pub struct Question {
-    pub id: i64,
-    pub category: Option<i64>,
-    pub question: String,
-    pub answer: String,
-    pub attachment: Option<String>,
-    pub hidden: bool,
-    pub ordering: i64,
+
+struct Attachment {
+    name: String,
+    path: String
 }
+
+#[derive(Serialize, Deserialize, sqlx::FromRow)]
+struct Question {
+    id: i64,
+    category: Option<i64>,
+    question: String,
+    answer: String,
+    attachments: Json<Attachment>,
+    hidden: bool,
+    ordering: i64,
+}
+
 
 pub async fn get_public_questions_for_public_category(
     pool: &SqlitePool,
@@ -20,7 +30,7 @@ pub async fn get_public_questions_for_public_category(
     sqlx::query_as!(
         Question,
         r#"
-        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachment, questions.hidden, questions.ordering 
+        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachments, questions.hidden, questions.ordering 
         FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1 AND categories.hidden = FALSE AND questions.hidden = FALSE
         ORDER BY questions.ordering
         "#,
@@ -28,18 +38,22 @@ pub async fn get_public_questions_for_public_category(
     ).fetch_all(pool).await
 }
 
-pub async fn get_question(pool: &SqlitePool, question: &str, category: &str) -> sqlx::Result<Question> {
+pub async fn get_question(
+    pool: &SqlitePool,
+    question: &str,
+    category: &str,
+) -> sqlx::Result<Question> {
     sqlx::query_as!(
         Question,
         r#"
-        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachment, questions.hidden, questions.ordering
+        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachments, questions.hidden, questions.ordering 
         FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1 AND questions.question = ?2
         "#,
         category,
         question,
     )
     .fetch_one(pool)
-    .await
+    .await.map(|x| x.into())
 }
 
 pub async fn get_question_by_id(pool: &SqlitePool, id: i64) -> sqlx::Result<Question> {
@@ -81,20 +95,20 @@ pub async fn create_question(
     question: &str,
     answer: &str,
     category: Option<i64>,
-    attachment: Option<&str>,
+    attachments: Vec<String>,
     hidden: bool,
     ordering: i64,
 ) -> sqlx::Result<i64> {
     let mut conn = pool.acquire().await?;
-
+    let att = serde_json::to_string(&attachments).unwrap();
     let id = sqlx::query!(
         r#"
-        INSERT INTO questions (category, question, answer, attachment, hidden, ordering) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+        INSERT INTO questions (category, question, answer, attachments, hidden, ordering) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
         "#,
         category,
         question,
         answer,
-        attachment,
+        att,
         hidden,
         ordering,
     )
@@ -111,19 +125,19 @@ pub async fn update_question(
     category: Option<i64>,
     question: String,
     answer: String,
-    attachment: Option<String>,
+    attachments: Vec<String>,
     hidden: bool,
 ) -> sqlx::Result<()> {
     let mut conn = pool.acquire().await?;
-
+    let att = serde_json::to_string(&attachments).unwrap();
     sqlx::query!(
         r#"
-        UPDATE questions SET category=?1, question=?2, answer=?3, attachment=?4, hidden=?5 WHERE questions.id = ?6
+        UPDATE questions SET category=?1, question=?2, answer=?3, attachments=?4, hidden=?5 WHERE questions.id = ?6
         "#,
         category,
         question,
         answer,
-        attachment,
+        att,
         hidden,
         id,
     )
@@ -178,7 +192,7 @@ pub async fn import_questions(pool: &SqlitePool, questions: Vec<Question>) -> sq
                 question.category,
                 question.question,
                 question.answer,
-                question.attachment,
+                question.attachments,
                 question.hidden,
             )
             .await?;
@@ -188,7 +202,7 @@ pub async fn import_questions(pool: &SqlitePool, questions: Vec<Question>) -> sq
                 question.question.as_str(),
                 question.answer.as_str(),
                 question.category,
-                question.attachment.as_deref(),
+                question.attachments,
                 question.hidden,
                 question.ordering,
             )

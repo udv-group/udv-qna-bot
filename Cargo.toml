@@ -6,3 +6,7 @@ members = [
     "db"
 ]
 exclude = ["cli"]
+
+[workspace.dependencies]
+sqlx = { version = "0.6", features = [ "runtime-tokio-native-tls" , "sqlite", "migrate", "offline" ] }
+dotenv = "0.15"

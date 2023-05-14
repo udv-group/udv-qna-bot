@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 clap = { version = "3.1", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
-sqlx = { version = "0.5", features = [ "runtime-tokio-native-tls" , "sqlite", "migrate" ] }
+sqlx.workspace = true
 csv = "1.1"
 tokio = { version =  "1.15", features = ["full"] }
 db = {path = "../db"}

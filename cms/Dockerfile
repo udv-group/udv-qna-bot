@@ -1,4 +1,4 @@
-FROM rust:1.68-slim as builder
+FROM rust:1.70-slim as builder
 
 WORKDIR /build
 ENV SQLX_OFFLINE=true

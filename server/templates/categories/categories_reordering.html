@@ -6,33 +6,42 @@
     <div class="col">
       <h3>Here are your items:</h3>
       <div hx-ext='json-enc'>
-        <form hx-post="/categories/new" hx-swap="afterbegin" hx-target="#categories-table" id="createForm">
+        <form hx-post="/categories/new" hx-swap="afterbegin" hx-target="closest table" id="createForm">
           <div class="mb-3">
             <label for="category-text">Name:</label>
-            <input type="text" class="form-control" id="category-text" name="name">
+            <input type="text" class="form-control" id="category-text" name="name" disabled>
           </div>
           <div class="mb-3">
             <label for="category-hidden">Hidden:</label>
-            <input type="checkbox" id="category-hidden" name="hidden">
+            <input type="checkbox" id="category-hidden" name="hidden" disabled>
+
           </div>
           <div class="modal-footer">
-            <button type="submit">Create</button>
+            <button type="submit" disabled>Create</button>
           </div>
         </form>
       </div>
-      <table id="categories-table">
+      <table>
         <thead>
           <tr>
             <th scope="col">#</th>
             <th scope="col">name</th>
             <th scope="col">hidden</th>
-            <th scope="col"><button hx-get="/categories/order" hx-target="body" hx-swap="outerHTML">Reorder</button>
+            <th scope="col"><button hx-post="/categories/order" hx-ext='json-enc' hx-include="[name='row_id']"
+                hx-target="body">Save</button>
+              <button hx-get="/categories" hx-target="body">Cancel</button>
             </th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="sortable">
           {% for category in categories.as_slice() -%}
-          {{ category }}
+          <tr>
+            <td><input type='hidden' name='row_id' value='{{category.id}}' />{{category.id}}</td>
+            <td>{{category.name}}</td>
+            <td>{{category.hidden}}</td>
+            <td>
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>

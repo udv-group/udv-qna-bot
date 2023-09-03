@@ -70,7 +70,7 @@ pub async fn get_all_categories(pool: &SqlitePool) -> sqlx::Result<Vec<Category>
     sqlx::query_as!(
         Category,
         r#"
-        SELECT * FROM categories ORDER BY ordering
+        SELECT * FROM categories ORDER BY ordering, id DESC
         "#
     )
     .fetch_all(pool)
@@ -81,7 +81,7 @@ pub async fn get_public_categories(pool: &SqlitePool) -> sqlx::Result<Vec<Catego
     sqlx::query_as!(
         Category,
         r#"
-        SELECT * FROM categories WHERE hidden = FALSE ORDER BY ordering
+        SELECT * FROM categories WHERE hidden = FALSE ORDER BY ordering, id DESC
         "#
     )
     .fetch_all(pool)

@@ -1,25 +1,47 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{SqlitePool, types::Json};
+use sqlx::SqlitePool;
 use std::collections::HashSet;
-
-type FileName = String;
 
 #[derive(Serialize, Deserialize)]
 
-struct Attachment {
+pub struct Attachment {
     name: String,
-    path: String
+    path: String,
 }
 
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
-struct Question {
+struct QuestionRow {
     id: i64,
     category: Option<i64>,
     question: String,
     answer: String,
-    attachments: Json<Attachment>,
+    attachments: String,
     hidden: bool,
     ordering: i64,
+}
+
+pub struct Question {
+    id: i64,
+    category: Option<i64>,
+    question: String,
+    answer: String,
+    attachments: Vec<Attachment>,
+    hidden: bool,
+    ordering: i64,
+}
+
+impl From<QuestionRow> for Question {
+    fn from(value: QuestionRow) -> Self {
+        Question {
+            id: value.id,
+            category: value.category,
+            question: value.question,
+            answer: value.answer,
+            attachments: serde_json::from_str(&value.attachments).unwrap(),
+            hidden: value.hidden,
+            ordering: value.ordering,
+        }
+    }
 }
 
 
@@ -28,7 +50,7 @@ pub async fn get_public_questions_for_public_category(
     category: &str,
 ) -> sqlx::Result<Vec<Question>> {
     sqlx::query_as!(
-        Question,
+        QuestionRow,
         r#"
         SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachments, questions.hidden, questions.ordering 
         FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1 AND categories.hidden = FALSE AND questions.hidden = FALSE
@@ -36,6 +58,7 @@ pub async fn get_public_questions_for_public_category(
         "#,
         category
     ).fetch_all(pool).await
+    .map(|questions| questions.into_iter().map(|q| q.into()).collect())
 }
 
 pub async fn get_question(
@@ -44,7 +67,7 @@ pub async fn get_question(
     category: &str,
 ) -> sqlx::Result<Question> {
     sqlx::query_as!(
-        Question,
+        QuestionRow,
         r#"
         SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachments, questions.hidden, questions.ordering 
         FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1 AND questions.question = ?2
@@ -58,7 +81,7 @@ pub async fn get_question(
 
 pub async fn get_question_by_id(pool: &SqlitePool, id: i64) -> sqlx::Result<Question> {
     sqlx::query_as!(
-        Question,
+        QuestionRow,
         r#"
         SELECT * FROM questions WHERE questions.id = ?1
         "#,
@@ -66,28 +89,31 @@ pub async fn get_question_by_id(pool: &SqlitePool, id: i64) -> sqlx::Result<Ques
     )
     .fetch_one(pool)
     .await
+    .map(|q| q.into())
 }
 
 pub async fn get_all_questions(pool: &SqlitePool) -> sqlx::Result<Vec<Question>> {
     sqlx::query_as!(
-        Question,
+        QuestionRow,
         r#"
         SELECT * FROM questions ORDER BY ordering
         "#,
     )
     .fetch_all(pool)
     .await
+    .map(|questions| questions.into_iter().map(|q| q.into()).collect())
 }
 
 pub async fn get_public_questions(pool: &SqlitePool) -> sqlx::Result<Vec<Question>> {
     sqlx::query_as!(
-        Question,
+        QuestionRow,
         r#"
         SELECT * FROM questions WHERE hidden = FALSE ORDER BY ordering
         "#,
     )
     .fetch_all(pool)
     .await
+    .map(|questions| questions.into_iter().map(|q| q.into()).collect())
 }
 
 pub async fn create_question(
@@ -95,7 +121,7 @@ pub async fn create_question(
     question: &str,
     answer: &str,
     category: Option<i64>,
-    attachments: Vec<String>,
+    attachments: Vec<Attachment>,
     hidden: bool,
     ordering: i64,
 ) -> sqlx::Result<i64> {
@@ -125,7 +151,7 @@ pub async fn update_question(
     category: Option<i64>,
     question: String,
     answer: String,
-    attachments: Vec<String>,
+    attachments: Vec<Attachment>,
     hidden: bool,
 ) -> sqlx::Result<()> {
     let mut conn = pool.acquire().await?;

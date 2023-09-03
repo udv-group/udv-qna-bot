@@ -6,9 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.6.12"
+axum = { version = "0.6.12", features = ["macros"] }
 sqlx.workspace = true
-db = {path = "../db"}
+db = { path = "../db" }
 serde = "1.0"
 dotenv.workspace = true
 tokio = { version = "1.27.0", features = ["full"] }
+askama = "0.12"

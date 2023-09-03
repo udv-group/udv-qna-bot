@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <h3>Here are your items:</h3>
+      <div>
+        <form hx-post="/categories/new" hx-swap="afterbegin" , hx-target="#categories-table-body", id="createForm">
+          <div class="mb-3">
+            <label for="category-text">Name:</label>
+            <input type="text" class="form-control" id="category-text" name="name">
+          </div>
+          <div class="mb-3">
+            <label for="category-hidden">Hidden:</label>
+            <input type="checkbox" id="category-hidden" name="hidden">
+          </div>
+          <div class="modal-footer">
+            <button type="submit">Create</button>
+          </div>
+        </form>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">name</th>
+            <th scope="col">hidden</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody  id="categories-table-body" hx-target="closest tr" hx-swap="outerHTML">
+          {% for category in categories.as_slice() -%}
+          {{ category }}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editModalLabel">Edit</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="/categories" enctype="multipart/form-data" id="editForm">
+          <div class="mb-3">
+            <input type="hidden" id="category-id" name="id">
+          </div>
+          <div class="mb-3">
+            <label for="category-name" class="col-form-label">Name:</label>
+            <input type="text" class="form-control" id="category-name" name="name">
+          </div>
+          <div class="mb-3">
+            <label for="category-hidden" class="col-form-label">Hidden:</label>
+            <input type="checkbox" id="category-hidden" name="hidden">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary" data-bs-dismiss="modal" data-bs-target="#editModal">Save
+              changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock content %}

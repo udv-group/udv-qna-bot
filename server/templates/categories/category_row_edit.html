@@ -1,0 +1,13 @@
+<tr hx-trigger='cancel' class='editing'>
+    <th>{{category.id}}</th>
+    <td><input name='name' value={{category.name}}></td>
+    <td><input type="checkbox" id="category-hidden" name="hidden" {% if category.hidden %}checked{% endif %}></td>
+    <td>
+        <button class="btn btn-danger" hx-get="/categories/{{category.id}}">
+            Cancel
+        </button>
+        <button class="btn btn-danger" hx-put="/categories/{{category.id}}" hx-include="closest tr">
+            Save
+        </button>
+    </td>
+</tr>

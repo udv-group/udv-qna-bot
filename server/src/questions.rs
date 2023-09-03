@@ -6,6 +6,8 @@ use axum::{
     Json, Router,
 };
 use db::Question;
+use serde::Deserialize;
+use sqlx::SqlitePool;
 
 #[derive(Deserialize)]
 struct NewQuestion {
@@ -14,18 +16,18 @@ struct NewQuestion {
     ordering: i64
 }
 
-async fn get_questions(State(pool): State<Pool>) -> Json<Vec<Question>> {
-    db::questions::get_public_questions(&pool).await.unwrap()
+async fn get_questions(State(pool): State<SqlitePool>) -> Json<Vec<Question>> {
+    todo!()
 }
 
-async fn create_question(State(pool): State<Pool>) -> Json<Question> {
-    !todo!()
+async fn create_question(State(pool): State<SqlitePool>) -> Json<Question> {
+    todo!()
 }
 
-async fn update_question(State(pool): State<Pool>) -> Json<Question> {
-    !todo!()
+async fn update_question(State(pool): State<SqlitePool>) -> Json<Question> {
+    todo!()
 }
 
-async fn attach_file(State(pool): State<Pool>, question_id: Query<i64>) {
-    !todo!()
+async fn attach_file(State(pool): State<SqlitePool>, question_id: Query<i64>) {
+    todo!()
 }

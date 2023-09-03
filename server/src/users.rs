@@ -8,6 +8,8 @@ use axum::{
 use db::User;
 use sqlx::{Pool, Sqlite, SqlitePool};
 
+use crate::AppState;
+
 async fn get_users(State(pool): State<SqlitePool>) -> Json<Vec<User>> {
     Json(db::users::get_users(&pool).await.unwrap())
 }
@@ -43,9 +45,9 @@ async fn delete_user(
     StatusCode::OK
 }
 
-pub fn users_router(pool: Pool<Sqlite>) -> Router {
+pub fn users_router(state: AppState) -> Router {
     Router::new()
         .route("/users", get(get_users).post(create_user).put(update_user))
         .route("/users/:id", delete(delete_user))
-        .with_state(pool)
+        .with_state(state)
 }

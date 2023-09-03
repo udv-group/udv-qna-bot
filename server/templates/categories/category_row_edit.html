@@ -1,12 +1,14 @@
-<tr hx-trigger='cancel' class='editing'>
-    <th>{{category.id}}</th>
+<tr hx-trigger='cancel' class='editing' hx-ext='json-enc'>
+    <td>{{category.id}}</td>
     <td><input name='name' value={{category.name}}></td>
     <td><input type="checkbox" id="category-hidden" name="hidden" {% if category.hidden %}checked{% endif %}></td>
     <td>
-        <button class="btn btn-danger" hx-get="/categories/{{category.id}}">
+        <button class="btn btn-danger" hx-get="/categories/{{category.id}}" hx-include="" hx-target="closest tr"
+            hx-swap="outerHTML">
             Cancel
         </button>
-        <button class="btn btn-danger" hx-put="/categories/{{category.id}}" hx-include="closest tr">
+        <button class="btn btn-danger" hx-put="/categories/{{category.id}}" hx-include="closest tr"
+            hx-target="closest tr" hx-swap="outerHTML">
             Save
         </button>
     </td>

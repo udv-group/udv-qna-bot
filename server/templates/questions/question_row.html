@@ -1,0 +1,26 @@
+<tr>
+  <td>{{question.id}}</td>
+  <td>{{question.question}}</td>
+  <td>{{question.answer}}</td>
+  <td>{{question.hidden}}</td>
+  <td><button type="button" hx-get="/questions/download/{{question.attachments[0]}}">Download</button></td>
+  <td>
+    <button class="btn btn-danger" hx-get="/questions/{{question.id}}/edit" hx-target="closest tr" hx-swap="outerHTML"
+      hx-trigger="edit" _="on click
+                     if .editing is not empty
+                       Swal.fire({title: 'Already Editing',
+                                  showCancelButton: true,
+                                  confirmButtonText: 'Yep, Edit This Row!',
+                                  text:'Hey!  You are already editing a row!  Do you want to cancel that edit and continue?'})
+                       if the result's isConfirmed is false
+                         halt
+                       end
+                       send cancel to .editing
+                     end
+                     trigger edit">
+      Edit
+    </button>
+    <button type="button" hx-confirm="Are you sure?" hx-delete="/questions/{{question.id}}" hx-target="closest tr"
+      hx-swap="outerHTML">Delete</button>
+  </td>
+</tr>

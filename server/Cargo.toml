@@ -6,11 +6,19 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = { version = "0.6.12", features = ["macros"] }
+axum = { version = "0.6.12", features = ["macros", "tracing"] }
 sqlx.workspace = true
 db = { path = "../db" }
 serde = "1.0"
 dotenv.workspace = true
 tokio = { version = "1.27.0", features = ["full"] }
-askama = "0.12"
+askama = { version = "0.12", features = ["with-axum"] }
+askama_axum = "0.3"
 serde-aux = "4.2.0"
+axum_typed_multipart = "0.9"
+tempfile = "3.8"
+tower-http = { version = "0.4", features = ["fs", "trace"] }
+tracing-subscriber = { version = "0.3", features = ["registry", "env-filter"] }
+tower = "0.4"
+tracing = "0.1"
+futures-util = "0.3"

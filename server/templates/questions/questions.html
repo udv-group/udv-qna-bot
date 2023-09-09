@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <div>
+        <form hx-encoding='multipart/form-data' hx-post="/questions" hx-swap="afterbegin" hx-target="#categories-table"
+          id="createForm">
+          <div class="mb-3">
+            <label for="question-text">Question:</label>
+            <input type="text" class="form-control" id="question-question" name="question">
+          </div>
+          <div class="mb-3">
+            <label for="question-text">Answer:</label>
+            <input type="text" class="form-control" id="question-answer" name="answer">
+          </div>
+          <div class="mb-3">
+            <label for="question-hidden">Hidden:</label>
+            <input type="checkbox" id="question-hidden" name="hidden">
+          </div>
+          <div class="mb-3">
+            <label for="question-attachmets">Attachment:</label>
+            <input type="file" id="question-attachmets" name="attachment">
+          </div>
+          <div class="modal-footer">
+            <button type="submit">Create</button>
+          </div>
+        </form>
+      </div>
+      <table id="categories-table">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Category</th>
+            <th scope="col">Question</th>
+            <th scope="col">Answer</th>
+            <th scope="col">Hidden</th>
+            <th scope="col">Attachment</th>
+            <th scope="col"><button hx-get="/questions/order" hx-target="body" hx-swap="outerHTML">Reorder</button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for question in questions.as_slice() -%}
+          {{ question }}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  htmx.onLoad(function (content) {
+    var sortables = content.querySelectorAll(".sortable");
+    for (var i = 0; i < sortables.length; i++) {
+      var sortable = sortables[i];
+      new Sortable(sortable, {
+        animation: 150,
+        ghostClass: 'blue-background-class'
+      });
+    }
+  })
+</script>
+
+{% endblock content %}

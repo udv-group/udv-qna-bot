@@ -4,19 +4,27 @@
 <div class="container">
   <div class="row">
     <div class="col">
-      <div hx-ext='json-enc'>
-        <form hx-post="/categories/new" hx-swap="afterbegin" hx-target="closest table" id="createForm">
+      <div>
+        <form hx-encoding='multipart/form-data' hx-post="/questions/new" hx-swap="afterbegin"
+          hx-target="#categories-table" id="createForm">
           <div class="mb-3">
-            <label for="category-text">Name:</label>
-            <input type="text" class="form-control" id="category-text" name="name" disabled>
+            <label for="question-text">Question:</label>
+            <input type="text" class="form-control" id="question-question" name="question" disabled>
           </div>
           <div class="mb-3">
-            <label for="category-hidden">Hidden:</label>
-            <input type="checkbox" id="category-hidden" name="hidden" disabled>
-
+            <label for="question-text">Answer:</label>
+            <input type="text" class="form-control" id="question-answer" name="answer" disabled>
+          </div>
+          <div class="mb-3">
+            <label for="question-hidden">Hidden:</label>
+            <input type="checkbox" id="question-hidden" name="hidden" disabled>
+          </div>
+          <div class="mb-3">
+            <label for="question-attachmets">Attachment:</label>
+            <input type="file" id="question-attachmets" name="attachment" disabled>
           </div>
           <div class="modal-footer">
-            <button type="submit" disabled>Create</button>
+            <button type="submit">Create</button>
           </div>
         </form>
       </div>
@@ -33,11 +41,11 @@
           </tr>
         </thead>
         <tbody class="sortable">
-          {% for category in categories.as_slice() -%}
+          {% for question in questions.as_slice() -%}
           <tr>
-            <td><input type='hidden' name='row_id' value='{{category.id}}' />{{category.id}}</td>
-            <td>{{category.name}}</td>
-            <td>{{category.hidden}}</td>
+            <td><input type='hidden' name='row_id' value='{{question.id}}' />{{question.id}}</td>
+            <td>{{question.question}}</td>
+            <td>{{question.hidden}}</td>
             <td>
             </td>
           </tr>

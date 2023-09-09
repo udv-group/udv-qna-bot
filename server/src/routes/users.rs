@@ -6,7 +6,7 @@ use axum::{
     Json, Router,
 };
 use db::User;
-use sqlx::{Pool, Sqlite, SqlitePool};
+use sqlx::SqlitePool;
 
 use crate::AppState;
 

@@ -2,13 +2,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::collections::HashSet;
 
-#[derive(Serialize, Deserialize)]
-
-pub struct Attachment {
-    name: String,
-    path: String,
-}
-
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
 struct QuestionRow {
     id: i64,
@@ -21,13 +14,13 @@ struct QuestionRow {
 }
 
 pub struct Question {
-    id: i64,
-    category: Option<i64>,
-    question: String,
-    answer: String,
-    attachments: Vec<Attachment>,
-    hidden: bool,
-    ordering: i64,
+    pub id: i64,
+    pub category: Option<i64>,
+    pub question: String,
+    pub answer: String,
+    pub attachments: Vec<String>,
+    pub hidden: bool,
+    pub ordering: i64,
 }
 
 impl From<QuestionRow> for Question {
@@ -43,7 +36,6 @@ impl From<QuestionRow> for Question {
         }
     }
 }
-
 
 pub async fn get_public_questions_for_public_category(
     pool: &SqlitePool,
@@ -121,7 +113,7 @@ pub async fn create_question(
     question: &str,
     answer: &str,
     category: Option<i64>,
-    attachments: Vec<Attachment>,
+    attachments: Vec<&str>,
     hidden: bool,
     ordering: i64,
 ) -> sqlx::Result<i64> {
@@ -151,7 +143,7 @@ pub async fn update_question(
     category: Option<i64>,
     question: String,
     answer: String,
-    attachments: Vec<Attachment>,
+    attachments: Vec<&str>,
     hidden: bool,
 ) -> sqlx::Result<()> {
     let mut conn = pool.acquire().await?;
@@ -218,7 +210,11 @@ pub async fn import_questions(pool: &SqlitePool, questions: Vec<Question>) -> sq
                 question.category,
                 question.question,
                 question.answer,
-                question.attachments,
+                question
+                    .attachments
+                    .iter()
+                    .map(|x| x.as_str())
+                    .collect(),
                 question.hidden,
             )
             .await?;
@@ -228,7 +224,11 @@ pub async fn import_questions(pool: &SqlitePool, questions: Vec<Question>) -> sq
                 question.question.as_str(),
                 question.answer.as_str(),
                 question.category,
-                question.attachments,
+                question
+                    .attachments
+                    .iter()
+                    .map(|x| x.as_str())
+                    .collect(),
                 question.hidden,
                 question.ordering,
             )

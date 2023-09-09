@@ -1,13 +1,14 @@
 [workspace]
 
-members = [
-    "bot",
-    "cms",
-    "db",
-    "server",
-]
+members = ["bot", "db", "server"]
 exclude = ["cli"]
 
 [workspace.dependencies]
-sqlx = { version = "0.6", features = [ "runtime-tokio-native-tls" , "sqlite", "migrate", "offline", "json" ] }
+sqlx = { version = "0.6", features = [
+    "runtime-tokio-native-tls",
+    "sqlite",
+    "migrate",
+    "offline",
+    "json",
+] }
 dotenv = "0.15"

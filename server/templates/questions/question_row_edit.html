@@ -1,0 +1,15 @@
+<tr hx-trigger='cancel' class='editing' hx-ext='json-enc'>
+    <td>{{question.id}}</td>
+    <td><input name='name' value={{question.question}}></td>
+    <td><input type="checkbox" id="question-hidden" name="hidden" {% if question.hidden %}checked{% endif %}></td>
+    <td>
+        <button class="btn btn-danger" hx-get="/questions/{{question.id}}" hx-include="" hx-target="closest tr"
+            hx-swap="outerHTML">
+            Cancel
+        </button>
+        <button class="btn btn-danger" hx-put="/questions/{{question.id}}" hx-include="closest tr"
+            hx-target="closest tr" hx-swap="outerHTML">
+            Save
+        </button>
+    </td>
+</tr>

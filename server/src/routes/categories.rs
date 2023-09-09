@@ -1,30 +1,16 @@
+use crate::deserializers::deserialize_bool_from_checkbox;
 use crate::AppState;
 use askama::Template;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
-    response::{Html, IntoResponse},
+    response::IntoResponse,
     routing::{delete, get, post},
     Json, Router,
 };
 use db::Category;
-use serde::{Deserialize, Deserializer};
-use sqlx::{Pool, Sqlite, SqlitePool};
-
-fn deserialize_bool_from_checkbox<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value = Option::<String>::deserialize(deserializer)?;
-    if value.is_none() {
-        return Ok(None);
-    } else {
-        match value.unwrap().as_str() {
-            "on" => Ok(Some(true)),
-            variant => Err(serde::de::Error::unknown_variant(variant, &["on"])),
-        }
-    }
-}
+use serde::Deserialize;
+use sqlx::SqlitePool;
 
 #[derive(Deserialize)]
 struct NewCategory {
@@ -33,6 +19,7 @@ struct NewCategory {
     #[serde(deserialize_with = "deserialize_bool_from_checkbox")]
     hidden: Option<bool>,
 }
+
 #[derive(Deserialize)]
 struct CategoryUpdate {
     name: String,
@@ -40,11 +27,35 @@ struct CategoryUpdate {
     #[serde(deserialize_with = "deserialize_bool_from_checkbox")]
     hidden: Option<bool>,
 }
+
+// a hack to deserialize array of strings to Vec<i64>, since this is how it's get encoded and
+// I don't want to write JS to do it on frontend
+#[derive(Deserialize)]
+struct OrderingBody {
+    row_id: Vec<Ordering>,
+}
+
+#[derive(Deserialize)]
+#[serde(try_from = "String")]
+struct Ordering(pub i64);
+
+impl TryFrom<String> for Ordering {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.parse::<i64>() {
+            Ok(v) => Ok(Ordering(v)),
+            Err(_) => Err(format!("Wrong value {value}, can not parse to i64")),
+        }
+    }
+}
+
 #[derive(Template)]
 #[template(path = "categories/category_row.html", escape = "none")]
 struct CategoryRow {
     category: Category,
 }
+
 #[derive(Template)]
 #[template(path = "categories/category_row_edit.html", escape = "none")]
 struct CategoryRowEdit {
@@ -59,37 +70,30 @@ struct CatgeoriesPage {
 
 #[derive(Template)]
 #[template(path = "categories/categories_reordering.html", escape = "none")]
-struct CatgeoriesPageReordering {
+struct CatgeoriesReorderingPage {
     categories: Vec<Category>,
 }
 
-/// Renders the whole categories page
-async fn get_categories(State(pool): State<SqlitePool>) -> Html<String> {
+async fn get_categories(State(pool): State<SqlitePool>) -> impl IntoResponse {
     let categories = db::categories::get_all_categories(&pool).await.unwrap();
-    let page = CatgeoriesPage {
+    CatgeoriesPage {
         categories: categories
             .into_iter()
             .map(|c| CategoryRow { category: c })
             .collect(),
-    };
-
-    Html(page.render().unwrap())
+    }
 }
 
-async fn get_category(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> Html<String> {
+async fn get_category(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
     let c = db::categories::get_category(&pool, id).await.unwrap();
-    let row = CategoryRow { category: c };
-
-    Html(row.render().unwrap())
+    CategoryRow { category: c }
 }
 
-async fn edit_category(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> Html<String> {
+async fn edit_category(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
     let c = db::categories::get_category(&pool, id).await.unwrap();
-    let row = CategoryRowEdit { category: c };
-
-    Html(row.render().unwrap())
+    CategoryRowEdit { category: c }
 }
-/// Renders _just_ the created row and sends it to HTMX to work its majic
+
 async fn create_category(
     State(pool): State<SqlitePool>,
     Json(new_category): Json<NewCategory>,
@@ -103,10 +107,9 @@ async fn create_category(
     .await
     .unwrap();
 
-    let row = CategoryRow {
+    CategoryRow {
         category: db::categories::get_category(&pool, id).await.unwrap(),
-    };
-    Html(row.render().unwrap())
+    }
 }
 
 async fn update_category(
@@ -117,10 +120,9 @@ async fn update_category(
     db::categories::update_category(&pool, id, category.name, category.hidden.unwrap_or(false))
         .await
         .unwrap();
-    let row = CategoryRow {
+    CategoryRow {
         category: db::categories::get_category(&pool, id).await.unwrap(),
-    };
-    Html(row.render().unwrap())
+    }
 }
 
 async fn delete_category(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
@@ -130,28 +132,7 @@ async fn delete_category(State(pool): State<SqlitePool>, Path(id): Path<i64>) ->
 
 async fn render_reordering_page(State(pool): State<SqlitePool>) -> impl IntoResponse {
     let categories = db::categories::get_all_categories(&pool).await.unwrap();
-    let page = CatgeoriesPageReordering { categories };
-
-    Html(page.render().unwrap())
-}
-
-#[derive(Deserialize)]
-struct OrderingBody {
-    row_id: Vec<Ordering>,
-}
-
-#[derive(Deserialize)]
-#[serde(try_from = "String")]
-struct Ordering(pub i64);
-impl TryFrom<String> for Ordering {
-    type Error = String;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value.parse::<i64>() {
-            Ok(v) => Ok(Ordering(v)),
-            Err(_) => Err("???".to_owned()),
-        }
-    }
+    CatgeoriesReorderingPage { categories }
 }
 
 async fn reorder(
@@ -173,14 +154,12 @@ async fn reorder(
         .unwrap();
 
     let categories = db::categories::get_all_categories(&pool).await.unwrap();
-    let page = CatgeoriesPage {
+    CatgeoriesPage {
         categories: categories
             .into_iter()
             .map(|c| CategoryRow { category: c })
             .collect(),
-    };
-
-    Html(page.render().unwrap())
+    }
 }
 
 pub fn category_router(state: AppState) -> Router {

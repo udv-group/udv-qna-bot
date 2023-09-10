@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::collections::HashSet;
 
+use crate::Reorder;
+
 #[derive(Serialize, Deserialize, sqlx::FromRow)]
 struct QuestionRow {
     id: i64,
@@ -46,13 +48,26 @@ pub async fn get_public_questions_for_public_category(
         r#"
         SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachments, questions.hidden, questions.ordering 
         FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1 AND categories.hidden = FALSE AND questions.hidden = FALSE
-        ORDER BY questions.ordering
+        ORDER BY questions.ordering, questions.id DESC
         "#,
         category
     ).fetch_all(pool).await
     .map(|questions| questions.into_iter().map(|q| q.into()).collect())
 }
 
+pub async fn get_questions_for_category(
+    pool: &SqlitePool,
+    category_id: i64,
+) -> sqlx::Result<Vec<Question>> {
+    sqlx::query_as!(
+        QuestionRow,
+        r#"
+        SELECT * FROM questions WHERE questions.category = ?1 ORDER BY questions.ordering, questions.id DESC
+        "#,
+        category_id
+    ).fetch_all(pool).await
+    .map(|questions| questions.into_iter().map(|q| q.into()).collect())
+}
 pub async fn get_question(
     pool: &SqlitePool,
     question: &str,
@@ -88,7 +103,7 @@ pub async fn get_all_questions(pool: &SqlitePool) -> sqlx::Result<Vec<Question>>
     sqlx::query_as!(
         QuestionRow,
         r#"
-        SELECT * FROM questions ORDER BY ordering
+        SELECT * FROM questions ORDER BY ordering, questions.id DESC
         "#,
     )
     .fetch_all(pool)
@@ -100,7 +115,7 @@ pub async fn get_public_questions(pool: &SqlitePool) -> sqlx::Result<Vec<Questio
     sqlx::query_as!(
         QuestionRow,
         r#"
-        SELECT * FROM questions WHERE hidden = FALSE ORDER BY ordering
+        SELECT * FROM questions WHERE hidden = FALSE ORDER BY ordering, questions.id DESC
         "#,
     )
     .fetch_all(pool)
@@ -178,7 +193,7 @@ pub async fn delete_question(pool: &SqlitePool, question_id: i64) -> sqlx::Resul
     Ok(())
 }
 
-pub async fn reorder_questions(pool: &SqlitePool, questions: Vec<Question>) -> sqlx::Result<()> {
+pub async fn reorder_questions(pool: &SqlitePool, questions: Vec<Reorder>) -> sqlx::Result<()> {
     let mut transaction = pool.begin().await?;
     for question in questions {
         sqlx::query!(
@@ -210,11 +225,7 @@ pub async fn import_questions(pool: &SqlitePool, questions: Vec<Question>) -> sq
                 question.category,
                 question.question,
                 question.answer,
-                question
-                    .attachments
-                    .iter()
-                    .map(|x| x.as_str())
-                    .collect(),
+                question.attachments.iter().map(|x| x.as_str()).collect(),
                 question.hidden,
             )
             .await?;
@@ -224,11 +235,7 @@ pub async fn import_questions(pool: &SqlitePool, questions: Vec<Question>) -> sq
                 question.question.as_str(),
                 question.answer.as_str(),
                 question.category,
-                question
-                    .attachments
-                    .iter()
-                    .map(|x| x.as_str())
-                    .collect(),
+                question.attachments.iter().map(|x| x.as_str()).collect(),
                 question.hidden,
                 question.ordering,
             )

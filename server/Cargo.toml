@@ -22,3 +22,4 @@ tracing-subscriber = { version = "0.3", features = ["registry", "env-filter"] }
 tower = "0.4"
 tracing = "0.1"
 futures-util = "0.3"
+anyhow = "1"

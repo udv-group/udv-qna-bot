@@ -9,6 +9,11 @@ pub use users::User;
 
 use sqlx::Error;
 
+pub struct Reorder {
+    pub id: i64,
+    pub ordering: i64,
+}
+
 pub async fn establish_connection(path: &str) -> Result<SqlitePool, Error> {
     SqlitePool::connect(format!("sqlite:{}", path).as_str()).await
 }

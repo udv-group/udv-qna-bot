@@ -1,9 +1,19 @@
 <tr>
   <td>{{question.id}}</td>
+  <td>
+    {% match question.category %}
+    {% when Some with (category) %}
+    {{category}}
+    {% when None %}
+    {% endmatch %}
   <td>{{question.question}}</td>
   <td>{{question.answer}}</td>
   <td>{{question.hidden}}</td>
-  <td><button type="button" hx-get="/questions/download/{{question.attachments[0]}}">Download</button></td>
+  <td>
+    {% if question.attachments.len() > 0 %}
+    <button type="button" hx-get="/questions/download/{{question.attachments[0]}}">Download</button>
+    {% endif %}
+  </td>
   <td>
     <button class="btn btn-danger" hx-get="/questions/{{question.id}}/edit" hx-target="closest tr" hx-swap="outerHTML"
       hx-trigger="edit" _="on click

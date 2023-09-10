@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::collections::HashSet;
 
+use crate::Reorder;
+
 #[derive(Serialize, Deserialize)]
 pub struct Category {
     pub id: i64,
@@ -10,10 +12,7 @@ pub struct Category {
     pub ordering: i64,
 }
 
-pub struct CategoryReorder {
-    pub id: i64,
-    pub ordering: i64,
-}
+
 
 pub async fn get_category(pool: &SqlitePool, id: i64) -> sqlx::Result<Category> {
     sqlx::query_as!(
@@ -107,10 +106,7 @@ pub async fn delete_category(pool: &SqlitePool, category_id: i64) -> sqlx::Resul
     Ok(())
 }
 
-pub async fn reorder_categories(
-    pool: &SqlitePool,
-    categories: Vec<CategoryReorder>,
-) -> sqlx::Result<()> {
+pub async fn reorder_categories(pool: &SqlitePool, categories: Vec<Reorder>) -> sqlx::Result<()> {
     let mut transaction = pool.begin().await?;
     for category in categories {
         sqlx::query!(

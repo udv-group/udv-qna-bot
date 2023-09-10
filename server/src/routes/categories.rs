@@ -139,11 +139,11 @@ async fn reorder(
     State(pool): State<SqlitePool>,
     Json(body): Json<OrderingBody>,
 ) -> impl IntoResponse {
-    let ordering: Vec<db::categories::CategoryReorder> = body
+    let ordering: Vec<db::Reorder> = body
         .row_id
         .into_iter()
         .enumerate()
-        .map(|(n, v)| db::categories::CategoryReorder {
+        .map(|(n, v)| db::Reorder {
             id: v.0,
             ordering: n as i64,
         })

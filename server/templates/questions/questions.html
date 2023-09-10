@@ -5,8 +5,16 @@
   <div class="row">
     <div class="col">
       <div>
-        <form hx-encoding='multipart/form-data' hx-post="/questions" hx-swap="afterbegin" hx-target="#categories-table"
-          id="createForm">
+        <form id="question-create" hx-encoding='multipart/form-data' hx-post="/questions" hx-swap="afterbegin" hx-target="#questions-table">
+          <div>
+            <label>Category:</label>
+            <select name="category">
+              <option>None</option>
+              {% for category in categories.as_slice() -%}
+              <option value="{{ category.id }}">{{category.name}}</option>
+              {% endfor %}
+            </select>
+          </div>
           <div class="mb-3">
             <label for="question-text">Question:</label>
             <input type="text" class="form-control" id="question-question" name="question">
@@ -28,30 +36,32 @@
           </div>
         </form>
       </div>
-      <table id="categories-table">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Category</th>
-            <th scope="col">Question</th>
-            <th scope="col">Answer</th>
-            <th scope="col">Hidden</th>
-            <th scope="col">Attachment</th>
-            <th scope="col"><button hx-get="/questions/order" hx-target="body" hx-swap="outerHTML">Reorder</button>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for question in questions.as_slice() -%}
-          {{ question }}
+      <div>
+        <label>Category</label>
+        <select id="category-select" name="category" hx-get="/questions/table" hx-target="#questions-table">
+          <option>All</option>
+          {% for category in categories.as_slice() -%}
+          <option value="{{ category.id }}">{{category.name}}</option>
           {% endfor %}
-        </tbody>
-      </table>
+        </select>
+      </div>
+      {{ table }}
     </div>
   </div>
 </div>
 
 <script>
+  let category_remover = function (evt) {
+    let category = evt.detail.parameters['category']
+    if (category === 'All') {
+      evt.detail.useUrlParams = false;
+    } else if (category === 'None') {
+      delete evt.detail.parameters['category']
+    }
+  }
+  htmx.on('#category-select', 'htmx:configRequest', category_remover);
+  htmx.on('#question-create', 'htmx:configRequest', category_remover);
+
   htmx.onLoad(function (content) {
     var sortables = content.querySelectorAll(".sortable");
     for (var i = 0; i < sortables.length; i++) {

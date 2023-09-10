@@ -1,11 +1,10 @@
-use std::path::PathBuf;
-
+use anyhow::anyhow;
 use askama::Template;
 use askama_axum::IntoResponse;
 use axum::{
     async_trait,
     body::Bytes,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::HeaderMap,
     routing::get,
     Router,
@@ -13,9 +12,11 @@ use axum::{
 use axum_typed_multipart::{
     FieldData, FieldMetadata, TryFromChunks, TryFromMultipart, TypedMultipart, TypedMultipartError,
 };
+use std::path::PathBuf;
 
-use db::Question;
+use db::{Category, Question};
 
+use serde::Deserialize;
 use sqlx::SqlitePool;
 
 use crate::AppState;
@@ -28,8 +29,13 @@ struct NewQuestion {
     question: String,
     answer: String,
     #[form_data(limit = "1GiB")]
-    attachment: FieldData<NamedTempFile>,
-    hidden: FormBool,
+    attachment: Option<FieldData<NamedTempFile>>,
+    hidden: Option<FormBool>,
+}
+
+#[derive(Deserialize)]
+struct QuestionsQuery {
+    category_id: Option<i64>,
 }
 
 struct FormBool(bool);
@@ -43,7 +49,9 @@ impl TryFromChunks for FormBool {
         let string = String::try_from_chunks(chunks, metadata).await?;
         match string.as_str() {
             "on" => Ok(FormBool(true)),
-            _ => Ok(FormBool(false)),
+            unexpected => Err(TypedMultipartError::Other {
+                source: anyhow!("Unexpected checkbox value {unexpected}"),
+            }),
         }
     }
 }
@@ -61,9 +69,16 @@ struct QuestionRowEdit {
 }
 
 #[derive(Template)]
+#[template(path = "questions/questions_table.html", escape = "none")]
+struct QuestionsTable {
+    questions: Vec<QuestionRow>,
+}
+
+#[derive(Template)]
 #[template(path = "questions/questions.html", escape = "none")]
 struct QuestionsPage {
-    questions: Vec<QuestionRow>,
+    categories: Vec<Category>,
+    table: QuestionsTable,
 }
 
 #[derive(Template)]
@@ -72,9 +87,31 @@ struct QuestionsReorderingPage {
     questions: Vec<Question>,
 }
 
-async fn get_questions(State(pool): State<SqlitePool>) -> impl IntoResponse {
+async fn questions_page(State(pool): State<SqlitePool>) -> impl IntoResponse {
     let questions = db::questions::get_all_questions(&pool).await.unwrap();
+    let table = QuestionsTable {
+        questions: questions
+            .into_iter()
+            .map(|c| QuestionRow { question: c })
+            .collect(),
+    };
     QuestionsPage {
+        categories: db::categories::get_all_categories(&pool).await.unwrap(),
+        table,
+    }
+}
+
+async fn questions_table(
+    State(pool): State<SqlitePool>,
+    Query(QuestionsQuery { category_id }): Query<QuestionsQuery>,
+) -> impl IntoResponse {
+    let questions = match category_id {
+        Some(id) => db::questions::get_questions_for_category(&pool, id)
+            .await
+            .unwrap(),
+        None => db::questions::get_all_questions(&pool).await.unwrap(),
+    };
+    QuestionsTable {
         questions: questions
             .into_iter()
             .map(|c| QuestionRow { question: c })
@@ -87,31 +124,35 @@ async fn create_question(
     State(static_dir): State<PathBuf>,
     TypedMultipart(form): TypedMultipart<NewQuestion>,
 ) -> impl IntoResponse {
-    let file_name = form
+    let (attachments, file_data): (Vec<String>, Option<(PathBuf, NamedTempFile)>) = form
         .attachment
-        .metadata
-        .file_name
-        .unwrap_or("random_name".to_owned());
+        .and_then(|a| {
+            let file_name = a.metadata.file_name.unwrap_or("random_name".to_owned());
+            let path = static_dir.join(&file_name);
+            Some((vec![file_name], Some((path, a.contents))))
+        })
+        .unwrap_or((vec![], None));
+
     let id = db::questions::create_question(
         &pool,
         &form.question,
         &form.answer,
         form.category,
-        vec![&file_name],
-        form.hidden.0,
+        attachments.iter().map(|a| a.as_str()).collect(),
+        form.hidden.map(|v| v.0).unwrap_or(false),
         0,
     )
     .await
     .unwrap();
-    let path = static_dir.join(file_name);
-    form.attachment.contents.persist(path).unwrap();
+    file_data.map(|(path, contents)| contents.persist(path));
+
     QuestionRow {
         question: db::questions::get_question_by_id(&pool, id).await.unwrap(),
     }
 }
 
 // Small hack to cause redirect on client side so download modal will be displayed
-// https://www.reddit.com/r/htmx/comments/pt4xng/htmxway_to_upload_and_download_a_file/
+// https://www.reddit.c
 async fn download_attachment(Path(file_name): Path<String>) -> HeaderMap {
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -123,7 +164,8 @@ async fn download_attachment(Path(file_name): Path<String>) -> HeaderMap {
 
 pub fn questions_router(state: AppState) -> Router {
     Router::new()
-        .route("/questions", get(get_questions).post(create_question))
+        .route("/questions", get(questions_page).post(create_question))
+        .route("/questions/table", get(questions_table))
         .route("/questions/download/:file_name", get(download_attachment))
         .with_state(state)
 }

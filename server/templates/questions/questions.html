@@ -16,11 +16,11 @@
             </select>
           </div>
           <div class="mb-3">
-            <label for="question-text">Question:</label>
+            <label for="question-question">Question:</label>
             <input type="text" class="form-control" id="question-question" name="question">
           </div>
           <div class="mb-3">
-            <label for="question-text">Answer:</label>
+            <label for="question-answer">Answer:</label>
             <input type="text" class="form-control" id="question-answer" name="answer">
           </div>
           <div class="mb-3">
@@ -28,8 +28,8 @@
             <input type="checkbox" id="question-hidden" name="hidden">
           </div>
           <div class="mb-3">
-            <label for="question-attachmets">Attachment:</label>
-            <input type="file" id="question-attachmets" name="attachment">
+            <label for="question-attachments">Attachment:</label>
+            <input type="file" id="question-attachments" name="attachment" multiple>
           </div>
           <div class="modal-footer">
             <button type="submit">Create</button>
@@ -49,6 +49,8 @@
     </div>
   </div>
 </div>
+
+<div id="attachments-modal"></div>
 
 <script>
   let category_remover = function (evt) {

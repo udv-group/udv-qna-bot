@@ -1,0 +1,23 @@
+<div id="modal" class="uk-modal" style="display:block;">
+    <div class="uk-modal-dialog uk-modal-body">
+        <h2 class="uk-modal-title">Attachments</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attachment in attachments.as_slice() -%}
+                <tr>
+                    <td>{{ attachment }}</td>
+                    <td><button type="button" hx-get="/questions/download/{{id}}/{{attachment}}">Download</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button id="cancelButton" type="button" class="uk-button uk-button-default"
+            _="on click take .uk-open from #modal wait 200ms then remove #modal">Close</button>
+    </div>
+</div>

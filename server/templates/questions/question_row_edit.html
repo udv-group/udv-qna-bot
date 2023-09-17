@@ -1,7 +1,19 @@
-<tr hx-trigger='cancel' class='editing' hx-ext='json-enc'>
+<tr hx-trigger='cancel' class='editing'>
     <td>{{question.id}}</td>
-    <td><input name='name' value={{question.question}}></td>
+    <td>
+        <select name="category">
+            <option>None</option>
+            {% for category in categories.as_slice() -%}
+            <option value="{{ category.id }}">{{category.name}}</option>
+            {% endfor %}
+        </select>
+    </td>
+    <td><input name='question' value={{question.question}}></td>
+    <td><input name='answer' value={{question.question}}></td>
     <td><input type="checkbox" id="question-hidden" name="hidden" {% if question.hidden %}checked{% endif %}></td>
+
+    <td><button class="uk-button uk-button-primary" disabled>Open Modal</button></td>
+
     <td>
         <button class="btn btn-danger" hx-get="/questions/{{question.id}}" hx-include="" hx-target="closest tr"
             hx-swap="outerHTML">

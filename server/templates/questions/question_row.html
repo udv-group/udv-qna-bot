@@ -5,14 +5,18 @@
     {% when Some with (category) %}
     {{category}}
     {% when None %}
-    {% endmatch %}
+    {% endmatch %} </td>
   <td>{{question.question}}</td>
   <td>{{question.answer}}</td>
   <td>{{question.hidden}}</td>
   <td>
-    {% if question.attachments.len() > 0 %}
-    <button type="button" hx-get="/questions/download/{{question.attachments[0]}}">Download</button>
-    {% endif %}
+    <button
+            id="showButton"
+            hx-get="/questions/{{question.id}}/attachments"
+            hx-target="#attachments-modal"
+            class="uk-button uk-button-primary"
+            _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">Open Modal</button>
+
   </td>
   <td>
     <button class="btn btn-danger" hx-get="/questions/{{question.id}}/edit" hx-target="closest tr" hx-swap="outerHTML"

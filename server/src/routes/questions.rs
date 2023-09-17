@@ -12,6 +12,8 @@ use axum::{
 use axum_typed_multipart::{
     FieldData, FieldMetadata, TryFromChunks, TryFromMultipart, TypedMultipart, TypedMultipartError,
 };
+use std::io::{Read, Write};
+use std::os::unix::raw::time_t;
 use std::path::PathBuf;
 
 use db::{Category, Question};
@@ -21,7 +23,10 @@ use sqlx::SqlitePool;
 
 use crate::AppState;
 use futures_util::stream::Stream;
+use futures_util::StreamExt;
 use tempfile::NamedTempFile;
+use tokio::fs::File;
+use tracing::debug;
 
 #[derive(TryFromMultipart)]
 struct NewQuestion {
@@ -29,7 +34,7 @@ struct NewQuestion {
     question: String,
     answer: String,
     #[form_data(limit = "1GiB")]
-    attachment: Option<FieldData<NamedTempFile>>,
+    attachment: Vec<FieldData<NamedTempFile>>,
     hidden: Option<FormBool>,
 }
 
@@ -65,6 +70,7 @@ struct QuestionRow {
 #[derive(Template)]
 #[template(path = "questions/question_row_edit.html", escape = "none")]
 struct QuestionRowEdit {
+    categories: Vec<Category>,
     question: Question,
 }
 
@@ -87,6 +93,13 @@ struct QuestionsReorderingPage {
     questions: Vec<Question>,
 }
 
+#[derive(Template)]
+#[template(path = "questions/attachments_modal.html", escape = "none")]
+struct Attachments {
+    id: i64,
+    attachments: Vec<String>,
+}
+
 async fn questions_page(State(pool): State<SqlitePool>) -> impl IntoResponse {
     let questions = db::questions::get_all_questions(&pool).await.unwrap();
     let table = QuestionsTable {
@@ -98,6 +111,12 @@ async fn questions_page(State(pool): State<SqlitePool>) -> impl IntoResponse {
     QuestionsPage {
         categories: db::categories::get_all_categories(&pool).await.unwrap(),
         table,
+    }
+}
+
+async fn get_question(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
+    QuestionRow {
+        question: db::questions::get_question_by_id(&pool, id).await.unwrap(),
     }
 }
 
@@ -124,48 +143,81 @@ async fn create_question(
     State(static_dir): State<PathBuf>,
     TypedMultipart(form): TypedMultipart<NewQuestion>,
 ) -> impl IntoResponse {
-    let (attachments, file_data): (Vec<String>, Option<(PathBuf, NamedTempFile)>) = form
+    dbg!(&form.attachment);
+    let info: Vec<(String, NamedTempFile)> = form
         .attachment
-        .and_then(|a| {
+        .into_iter()
+        .map(|a| {
             let file_name = a.metadata.file_name.unwrap_or("random_name".to_owned());
-            let path = static_dir.join(&file_name);
-            Some((vec![file_name], Some((path, a.contents))))
+            (file_name, a.contents)
         })
-        .unwrap_or((vec![], None));
+        .collect();
 
     let id = db::questions::create_question(
         &pool,
         &form.question,
         &form.answer,
         form.category,
-        attachments.iter().map(|a| a.as_str()).collect(),
+        info.iter().map(|(a, _)| a.as_str()).collect(),
         form.hidden.map(|v| v.0).unwrap_or(false),
         0,
     )
     .await
     .unwrap();
-    file_data.map(|(path, contents)| contents.persist(path));
+    info.into_iter().for_each(|(name, contents)| {
+        let question_dir = static_dir.join(id.to_string());
+        std::fs::create_dir_all(&question_dir).unwrap();
+
+        std::fs::copy(contents.path(), question_dir.join(name)).unwrap();
+        std::fs::remove_file(contents.path()).unwrap();
+    });
 
     QuestionRow {
         question: db::questions::get_question_by_id(&pool, id).await.unwrap(),
     }
 }
 
+async fn edit_question(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
+    let categories = db::categories::get_all_categories(&pool).await.unwrap();
+    let question = db::questions::get_question_by_id(&pool, id).await.unwrap();
+    QuestionRowEdit {
+        categories,
+        question,
+    }
+}
+
 // Small hack to cause redirect on client side so download modal will be displayed
-// https://www.reddit.c
-async fn download_attachment(Path(file_name): Path<String>) -> HeaderMap {
+async fn download_attachment(Path((id, file_name)): Path<(i64, String)>) -> HeaderMap {
     let mut headers = HeaderMap::new();
     headers.insert(
         "HX-Redirect",
-        format!("/static/{}", file_name).parse().unwrap(),
+        format!("/static/{}/{}", id, file_name).parse().unwrap(),
     );
     headers
+}
+
+async fn update_question(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
+    todo!();
+}
+
+async fn attachments(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
+    let question = db::questions::get_question_by_id(&pool, id).await.unwrap();
+    Attachments {
+        id,
+        attachments: question.attachments,
+    }
 }
 
 pub fn questions_router(state: AppState) -> Router {
     Router::new()
         .route("/questions", get(questions_page).post(create_question))
         .route("/questions/table", get(questions_table))
-        .route("/questions/download/:file_name", get(download_attachment))
+        .route("/questions/:id/edit", get(edit_question))
+        .route("/questions/:id", get(get_question))
+        .route("/questions/:id/attachments", get(attachments))
+        .route(
+            "/questions/download/:id/:file_name",
+            get(download_attachment),
+        )
         .with_state(state)
 }

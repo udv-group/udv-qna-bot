@@ -36,6 +36,7 @@
           </div>
         </form>
       </div>
+      <hr>
       <div>
         <label>Category</label>
         <select id="category-select" name="category" hx-get="/questions/table" hx-target="#questions-table">
@@ -64,16 +65,16 @@
   htmx.on('#category-select', 'htmx:configRequest', category_remover);
   htmx.on('#question-create', 'htmx:configRequest', category_remover);
 
-  htmx.onLoad(function (content) {
-    var sortables = content.querySelectorAll(".sortable");
-    for (var i = 0; i < sortables.length; i++) {
-      var sortable = sortables[i];
-      new Sortable(sortable, {
-        animation: 150,
-        ghostClass: 'blue-background-class'
-      });
-    }
-  })
+  // htmx.onLoad(function (content) {
+  //   var sortables = content.querySelectorAll(".sortable");
+  //   for (var i = 0; i < sortables.length; i++) {
+  //     var sortable = sortables[i];
+  //     new Sortable(sortable, {
+  //       animation: 150,
+  //       ghostClass: 'blue-background-class'
+  //     });
+  //   }
+  // })
 </script>
 
 {% endblock content %}

@@ -12,8 +12,6 @@ pub struct Category {
     pub ordering: i64,
 }
 
-
-
 pub async fn get_category(pool: &SqlitePool, id: i64) -> sqlx::Result<Category> {
     sqlx::query_as!(
         Category,

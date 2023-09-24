@@ -1,7 +1,17 @@
 <div id="modal" class="uk-modal" style="display:block;">
     <div class="uk-modal-dialog uk-modal-body">
         <h2 class="uk-modal-title">Attachments</h2>
-        <table>
+        <form hx-encoding='multipart/form-data' hx-post="/questions/{{id}}/attachments" hx-swap="afterbegin"
+          hx-target="#attachments-table" id="createForm">
+          <div class="mb-3">
+            <label for="question-attachments">Attachment:</label>
+            <input type="file" name="attachment">
+          </div>
+          <div class="modal-footer">
+            <button type="submit">Create</button>
+          </div>
+        </form>
+        <table id="attachments-table">
             <thead>
                 <tr>
                     <th scope="col">Name</th>
@@ -10,14 +20,11 @@
             </thead>
             <tbody>
                 {% for attachment in attachments.as_slice() -%}
-                <tr>
-                    <td>{{ attachment }}</td>
-                    <td><button type="button" hx-get="/questions/download/{{id}}/{{attachment}}">Download</button></td>
-                </tr>
+                {{attachment}}
                 {% endfor %}
             </tbody>
         </table>
-        <button id="cancelButton" type="button" class="uk-button uk-button-default"
+        <button id="cancelButton" type="button"
             _="on click take .uk-open from #modal wait 200ms then remove #modal">Close</button>
     </div>
 </div>

@@ -1,7 +1,6 @@
 {
   "db": "SQLite",
-  "0aa55e7b71d17421cf53438737d127c42fd61b8fd9dcc2f15a71cb0d48d52a65": {
-    "query": "\n        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachment, questions.hidden, questions.ordering \n        FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1 AND categories.hidden = FALSE AND questions.hidden = FALSE\n        ORDER BY questions.ordering\n        ",
+  "0f42e271f34718e375b0e68b7602dd5611ac94b3c7d44d3d3d05847ab385c4d3": {
     "describe": {
       "columns": [
         {
@@ -25,7 +24,7 @@
           "type_info": "Text"
         },
         {
-          "name": "attachment",
+          "name": "attachments",
           "ordinal": 4,
           "type_info": "Text"
         },
@@ -40,22 +39,22 @@
           "type_info": "Int64"
         }
       ],
-      "parameters": {
-        "Right": 1
-      },
       "nullable": [
         false,
         true,
         false,
         false,
-        true,
+        false,
         false,
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachments, questions.hidden, questions.ordering \n        FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1 AND categories.hidden = FALSE AND questions.hidden = FALSE\n        ORDER BY questions.ordering, questions.id DESC\n        "
   },
   "1b4d52c830ad4ccdc484d59e8859df77318f22367c81df47983dcf1f62706ede": {
-    "query": "\n        SELECT * FROM users WHERE users.id = ?1\n        ",
     "describe": {
       "columns": [
         {
@@ -89,9 +88,6 @@
           "type_info": "Bool"
         }
       ],
-      "parameters": {
-        "Right": 1
-      },
       "nullable": [
         false,
         true,
@@ -99,51 +95,44 @@
         true,
         false,
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n        SELECT * FROM users WHERE users.id = ?1\n        "
   },
   "22878b2600d7bafb026ecae6fae8bb5e8ad2888606b16e9b70ed16e7ba9dc4e3": {
-    "query": "\n        INSERT INTO users (id, username, first_name, last_name, is_admin, active) VALUES(?1, ?2, ?3, ?4, ?5, ?6)\n        ",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 6
-      },
-      "nullable": []
-    }
-  },
-  "228dd1c8c89d49b7d655becb67ce04ba3ec476595b81ffe88232329b15b0abc4": {
-    "query": "\n        INSERT INTO questions (category, question, answer, attachment, hidden) VALUES (?1, ?2, ?3, ?4, ?5)\n        ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 5
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "\n        INSERT INTO users (id, username, first_name, last_name, is_admin, active) VALUES(?1, ?2, ?3, ?4, ?5, ?6)\n        "
   },
   "24c549ba95c88259c00e2b7e48d7d38d4468ff39def0f0a5c2c367e3f2133c96": {
-    "query": "\n        DELETE FROM questions WHERE questions.id = ?1\n        ",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 1
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "\n        DELETE FROM questions WHERE questions.id = ?1\n        "
   },
   "266ca63f7b9ec09003a8a093082535ce76e90cc6fe5732f52d59b70d8b198ff8": {
-    "query": "\n        DELETE FROM categories WHERE categories.id = ?1\n        ",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 1
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "\n        DELETE FROM categories WHERE categories.id = ?1\n        "
   },
-  "33114d06768732f3353178cbafef7cb941f33f72049f13f8f901fce0d6ae020d": {
-    "query": "\n        SELECT * FROM questions WHERE hidden = FALSE ORDER BY id\n        ",
+  "2cfe88b3abf87461dec05785644d849575b093981077f3fc28e786a179a1b7c4": {
     "describe": {
       "columns": [
         {
@@ -152,174 +141,144 @@
           "type_info": "Int64"
         },
         {
-          "name": "category",
+          "name": "name",
           "ordinal": 1,
-          "type_info": "Int64"
-        },
-        {
-          "name": "question",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "answer",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "attachment",
-          "ordinal": 4,
           "type_info": "Text"
         },
         {
           "name": "hidden",
-          "ordinal": 5,
-          "type_info": "Bool"
-        }
-      ],
-      "parameters": {
-        "Right": 0
-      },
-      "nullable": [
-        false,
-        true,
-        false,
-        false,
-        true,
-        false
-      ]
-    }
-  },
-  "3cefe70bbea0299a2506d4f3a2c3003a3813390a1eef692b962ab5f0c7b7daa6": {
-    "query": "\n        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachment, questions.hidden \n        FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1 AND categories.hidden = FALSE AND questions.hidden = FALSE\n        ",
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int64"
-        },
-        {
-          "name": "category",
-          "ordinal": 1,
-          "type_info": "Int64"
-        },
-        {
-          "name": "question",
           "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "answer",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "attachment",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "hidden",
-          "ordinal": 5,
           "type_info": "Bool"
         },
         {
           "name": "ordering",
-          "ordinal": 6,
+          "ordinal": 3,
           "type_info": "Int64"
         }
       ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
       "parameters": {
-        "Right": 1
-      },
+        "Right": 0
+      }
+    },
+    "query": "\n        SELECT * FROM categories ORDER BY ordering, id DESC\n        "
+  },
+  "42630695797644c3c01dba66f7e471a96748af60b5824ae58902a855e71668f3": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "category",
+          "ordinal": 1,
+          "type_info": "Int64"
+        },
+        {
+          "name": "question",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "answer",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "hidden",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "ordering",
+          "ordinal": 5,
+          "type_info": "Int64"
+        },
+        {
+          "name": "attachments",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
       "nullable": [
         false,
         true,
         false,
         false,
-        true,
+        false,
         false,
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n        SELECT * FROM questions WHERE questions.id = ?1\n        "
+  },
+  "44f67ac9d2bf2182f8b032819d93e00cf8831008daa7a7ea243796f882a5ab8b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "hidden",
+          "ordinal": 2,
+          "type_info": "Bool"
+        },
+        {
+          "name": "ordering",
+          "ordinal": 3,
+          "type_info": "Int64"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n        SELECT * FROM categories WHERE hidden = FALSE ORDER BY ordering, id DESC\n        "
   },
   "481d9a78f2affcf3836ed94a056a1c081e80b7fecf9b00096208ce0d623f8e1a": {
-    "query": "\n        UPDATE categories SET name=?1, hidden=?2 WHERE categories.id = ?3\n        ",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 3
-      },
-      "nullable": []
-    }
-  },
-  "4f63620b9f092d5ee629bef5b2d6b6f3251f27a33746fb1e0518e59f93764d80": {
-    "query": "\n        SELECT * FROM questions WHERE questions.question = ?1\n        ",
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int64"
-        },
-        {
-          "name": "category",
-          "ordinal": 1,
-          "type_info": "Int64"
-        },
-        {
-          "name": "question",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "answer",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "attachment",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "hidden",
-          "ordinal": 5,
-          "type_info": "Bool"
-        },
-        {
-          "name": "ordering",
-          "ordinal": 6,
-          "type_info": "Int64"
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false,
-        true,
-        false,
-        false,
-        true,
-        false,
-        false
-      ]
-    }
+      }
+    },
+    "query": "\n        UPDATE categories SET name=?1, hidden=?2 WHERE categories.id = ?3\n        "
   },
   "4ff15a40f59c50ef179a90afe7e07d1f8ccf2eea0476353aac7fde8f7ffe2281": {
-    "query": "\n            UPDATE categories SET ordering=?1 WHERE categories.id = ?2\n            ",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 2
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "\n            UPDATE categories SET ordering=?1 WHERE categories.id = ?2\n            "
   },
-  "605de104ebb61af398c1b91348e935680d204369bd1824932ab8552081d29ed6": {
-    "query": "\n        SELECT * FROM categories WHERE hidden = FALSE ORDER BY ordering\n        ",
+  "7f5f484b046a85fe981b7bf19cb8eb9a5c44c04f4c749bdddc5ef9cf5dd5f295": {
     "describe": {
       "columns": [
         {
@@ -343,209 +302,101 @@
           "type_info": "Text"
         },
         {
-          "name": "attachment",
+          "name": "hidden",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "ordering",
+          "ordinal": 5,
+          "type_info": "Int64"
+        },
+        {
+          "name": "attachments",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n        SELECT * FROM questions WHERE hidden = FALSE ORDER BY ordering, questions.id DESC\n        "
+  },
+  "81bb3179c1aef3b7947400dbba03ae598b4f44d02d4744a986c9caa4f6806249": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "category",
+          "ordinal": 1,
+          "type_info": "Int64"
+        },
+        {
+          "name": "question",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "answer",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "attachments",
           "ordinal": 4,
           "type_info": "Text"
         },
         {
           "name": "hidden",
-          "ordinal": 2,
+          "ordinal": 5,
           "type_info": "Bool"
         },
         {
           "name": "ordering",
-          "ordinal": 3,
+          "ordinal": 6,
           "type_info": "Int64"
-        },
-        {
-          "name": "hidden",
-          "ordinal": 5,
-          "type_info": "Bool"
         }
+      ],
+      "nullable": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
       ],
       "parameters": {
         "Right": 2
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        true,
-        false,
-        false,
-        true,
-        false
-      ]
-    }
+      }
+    },
+    "query": "\n        SELECT questions.id, questions.category, questions.question, questions.answer, questions.attachments, questions.hidden, questions.ordering \n        FROM questions JOIN categories on questions.category = categories.id WHERE categories.name = ?1 AND questions.question = ?2\n        "
   },
   "82c854252bc363d07bb3d3f000b5b2c38e960e62022bc372024ef9d3015dbcf8": {
-    "query": "\nINSERT INTO categories (name, hidden, ordering) VALUES (?1, ?2, ?3)\n        ",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 3
-      },
-      "nullable": []
-    }
-  },
-  "84b99aa4f838ceb7731e2544a69c230babbc42d2695b251bde5b7a67ab15a100": {
-    "query": "\n        UPDATE questions SET category=?1, question=?2, answer=?3, attachment=?4, hidden=?5 WHERE questions.id = ?6\n        ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 6
-      },
-      "nullable": []
-    }
-  },
-  "8874e6fb109989c8e5c7745678bbf2267c5417eaf4cd25e6f278278cdb33564a": {
-    "query": "\n        SELECT * FROM categories ORDER BY ordering\n        ",
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int64"
-        },
-        {
-          "name": "name",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "hidden",
-          "ordinal": 2,
-          "type_info": "Bool"
-        },
-        {
-          "name": "ordering",
-          "ordinal": 3,
-          "type_info": "Int64"
-        }
-      ],
-      "parameters": {
-        "Right": 0
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
-  "90d93633e4377735fceb2bd9b3a16e5dc468e3ad83abaa055808ebb0c71824ea": {
-    "query": "\n        SELECT * FROM questions WHERE hidden = FALSE ORDER BY ordering\n        ",
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int64"
-        },
-        {
-          "name": "category",
-          "ordinal": 1,
-          "type_info": "Int64"
-        },
-        {
-          "name": "question",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "answer",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "attachment",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "hidden",
-          "ordinal": 5,
-          "type_info": "Bool"
-        },
-        {
-          "name": "ordering",
-          "ordinal": 6,
-          "type_info": "Int64"
-        }
-      ],
-      "parameters": {
-        "Right": 0
-      },
-      "nullable": [
-        false,
-        true,
-        false,
-        false,
-        true,
-        false,
-        false
-      ]
-    }
-  },
-  "9aac8d93a2c8be73c2761ea5d5e688900fd505d76f7179cfc877639b057310e7": {
-    "query": "\n        SELECT * FROM questions ORDER BY ordering\n        ",
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int64"
-        },
-        {
-          "name": "category",
-          "ordinal": 1,
-          "type_info": "Int64"
-        },
-        {
-          "name": "question",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "answer",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "attachment",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "hidden",
-          "ordinal": 5,
-          "type_info": "Bool"
-        },
-        {
-          "name": "ordering",
-          "ordinal": 6,
-          "type_info": "Int64"
-        }
-      ],
-      "parameters": {
-        "Right": 0
-      },
-      "nullable": [
-        false,
-        true,
-        false,
-        false,
-        true,
-        false,
-        false
-      ]
-    }
+      }
+    },
+    "query": "\nINSERT INTO categories (name, hidden, ordering) VALUES (?1, ?2, ?3)\n        "
   },
   "a14bd519fd3ecda2df5d05cfbdfe889037b1b863b492088b17d2a4197054b7d5": {
-    "query": "\n        SELECT * FROM categories WHERE categories.id = ?1\n        ",
     "describe": {
       "columns": [
         {
@@ -568,20 +419,20 @@
           "ordinal": 3,
           "type_info": "Int64"
         }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
       ],
       "parameters": {
         "Right": 1
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ]
-    }
+      }
+    },
+    "query": "\n        SELECT * FROM categories WHERE categories.id = ?1\n        "
   },
   "a2c624a66b1999281d3b63e85b77785d0aae8d5ebc4865b7d42d7afd81e6f58c": {
-    "query": "\n        SELECT * FROM users\n        ",
     "describe": {
       "columns": [
         {
@@ -615,9 +466,6 @@
           "type_info": "Bool"
         }
       ],
-      "parameters": {
-        "Right": 0
-      },
       "nullable": [
         false,
         true,
@@ -625,61 +473,34 @@
         true,
         false,
         false
-      ]
-    }
-  },
-  "a3bd9f08a752620b5f12c51e56cc6f1b752f03006673a44e4b110415552730e9": {
-    "query": "\n        INSERT INTO questions (category, question, answer, attachment, hidden, ordering) VALUES (?1, ?2, ?3, ?4, ?5, ?6)\n        ",
-    "describe": {
-      "columns": [],
+      ],
       "parameters": {
-        "Right": 6
-      },
-      "nullable": []
-    }
+        "Right": 0
+      }
+    },
+    "query": "\n        SELECT * FROM users\n        "
   },
   "b82e2f5f56562c6a9d1d6551b6c3dd55ddd80ca846dfcfb14fad5a6da45729e6": {
-    "query": "\n            UPDATE questions SET ordering=?1 WHERE questions.id = ?2\n            ",
     "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": "Int64"
-        },
-        {
-          "name": "name",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "hidden",
-          "ordinal": 2,
-          "type_info": "Bool"
-        }
-      ],
+      "columns": [],
+      "nullable": [],
       "parameters": {
-        "Right": 0
-      },
-      "nullable": [
-        false,
-        false,
-        false
-      ]
-    }
+        "Right": 2
+      }
+    },
+    "query": "\n            UPDATE questions SET ordering=?1 WHERE questions.id = ?2\n            "
   },
   "bd5fd5b5f2b8a55ed71739ecbb7324ed348fe0261777cd0a464c221a6b4ea321": {
-    "query": "\n        UPDATE users SET username=?1, first_name=?2, last_name=?3, is_admin=?4, active=?5 WHERE users.id = ?6\n        ",
     "describe": {
       "columns": [],
+      "nullable": [],
       "parameters": {
         "Right": 6
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "\n        UPDATE users SET username=?1, first_name=?2, last_name=?3, is_admin=?4, active=?5 WHERE users.id = ?6\n        "
   },
-  "daa15eff28393294b71fccca18ece0ad6573ac728c494f5317942447d4759c59": {
-    "query": "\n        SELECT * FROM categories ORDER BY id\n        ",
+  "dfe60109c67eb29a456b323f5a99bd951e5c9c784e322824829fca1ce3733cb5": {
     "describe": {
       "columns": [
         {
@@ -688,34 +509,133 @@
           "type_info": "Int64"
         },
         {
-          "name": "name",
+          "name": "category",
           "ordinal": 1,
+          "type_info": "Int64"
+        },
+        {
+          "name": "question",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "answer",
+          "ordinal": 3,
           "type_info": "Text"
         },
         {
           "name": "hidden",
-          "ordinal": 2,
+          "ordinal": 4,
           "type_info": "Bool"
+        },
+        {
+          "name": "ordering",
+          "ordinal": 5,
+          "type_info": "Int64"
+        },
+        {
+          "name": "attachments",
+          "ordinal": 6,
+          "type_info": "Text"
         }
       ],
-      "parameters": {
-        "Right": 0
-      },
       "nullable": [
+        false,
+        true,
+        false,
+        false,
         false,
         false,
         false
-      ]
-    }
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n        SELECT * FROM questions ORDER BY ordering, questions.id DESC\n        "
   },
-  "f52de2da363d8bd000378257bd31f20880964105209a457fd451077b428f058d": {
-    "query": "\n        DELETE FROM users WHERE users.id = ?1\n        ",
+  "e14a774eac710117e1abe9fe0a18771a399cbd65342d76ff7292bdd6143763ed": {
     "describe": {
       "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "\n        UPDATE questions SET category=?1, question=?2, answer=?3, attachments=?4, hidden=?5 WHERE questions.id = ?6\n        "
+  },
+  "e603c3fb9ab1b6e08122212052abd8b65ac59d70b0473b885c2ffbd7ffb1b57d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 6
+      }
+    },
+    "query": "\n        INSERT INTO questions (category, question, answer, attachments, hidden, ordering) VALUES (?1, ?2, ?3, ?4, ?5, ?6)\n        "
+  },
+  "e75197194584d739c50226b956cb2f7a84da524bac0460f3403d9effabffa979": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "category",
+          "ordinal": 1,
+          "type_info": "Int64"
+        },
+        {
+          "name": "question",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "answer",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "hidden",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "ordering",
+          "ordinal": 5,
+          "type_info": "Int64"
+        },
+        {
+          "name": "attachments",
+          "ordinal": 6,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
       "parameters": {
         "Right": 1
-      },
-      "nullable": []
-    }
+      }
+    },
+    "query": "\n        SELECT * FROM questions WHERE questions.category = ?1 ORDER BY questions.ordering, questions.id DESC\n        "
+  },
+  "f52de2da363d8bd000378257bd31f20880964105209a457fd451077b428f058d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n        DELETE FROM users WHERE users.id = ?1\n        "
   }
 }

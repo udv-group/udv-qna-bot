@@ -23,11 +23,11 @@ use crate::auth;
 type MyDialogue = Dialogue<State, SqliteStorage<Json>>;
 
 #[derive(BotCommands, Clone)]
-#[command(rename = "lowercase", description = "These commands are supported:")]
+#[command(description = "These commands are supported:")]
 enum Command {
-    #[command(description = "Display this text")]
+    #[command(rename = "lowercase", description = "Display this text")]
     Help,
-    #[command(description = "Start")]
+    #[command(rename = "lowercase", description = "Start")]
     Start,
 }
 
@@ -107,7 +107,7 @@ async fn reply_with_answer(
     for data in data_v {
         bot.send_message(msg.chat.id, data).await.unwrap();
     }
-    if let Some(att) = question.attachment {
+    for att in question.attachments.iter() {
         let filepath = static_dir.join(att);
         if filepath.is_file() {
             bot.send_document(msg.chat.id, InputFile::file(filepath))

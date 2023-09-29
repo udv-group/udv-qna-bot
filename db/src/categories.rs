@@ -4,7 +4,7 @@ use std::collections::HashSet;
 
 use crate::Reorder;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Category {
     pub id: i64,
     pub name: String,

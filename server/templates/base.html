@@ -5,18 +5,42 @@
   <meta charset="utf-8" />
   <title>QnA bot CMS</title>
 
-  <!-- UIkit CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/css/uikit.min.css" />
-
-  <!-- UIkit JS -->
-  <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/js/uikit.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/js/uikit-icons.min.js"></script>
   <script src="https://unpkg.com/htmx.org@1.9.5"
     integrity="sha384-xcuj3WpfgjlKF+FXhSQFQ0ZNr39ln+hwjN3npfM9VBnUskLolQAcN80McRIVOPuO"
     crossorigin="anonymous"></script>
   <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
   <script src="http://SortableJS.github.io/Sortable/Sortable.js"></script>
   <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+
+
+  <!-- UIkit CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/css/uikit.min.css" />
+  <!-- UIkit JS -->
+  <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/js/uikit.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/uikit@3.16.26/dist/js/uikit-icons.min.js"></script>
+
+
+  <script>
+    htmx.onLoad(function (content) {
+      var sortables = content.querySelectorAll(".sortable");
+      for (var i = 0; i < sortables.length; i++) {
+        var sortable = sortables[i];
+        new Sortable(sortable, {
+          animation: 150,
+          ghostClass: 'blue-background-class'
+        });
+      }
+    })
+    let category_remover = function (evt) {
+      console.log(evt)
+      let category = evt.detail.parameters['category']
+      if (category === 'All' | category === 'None') {
+        evt.detail.useUrlParams = false;
+        delete evt.detail.parameters['category'];
+      }
+      console.log(evt)
+    }
+  </script>
 
 </head>
 
@@ -26,5 +50,6 @@
   {% block content %}{% endblock content %}
 
 </body>
+
 
 </html>

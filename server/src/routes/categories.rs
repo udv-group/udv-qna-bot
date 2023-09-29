@@ -12,6 +12,8 @@ use db::Category;
 use serde::Deserialize;
 use sqlx::SqlitePool;
 
+use super::Stri64;
+
 #[derive(Deserialize)]
 struct NewCategory {
     name: String,
@@ -32,22 +34,7 @@ struct CategoryUpdate {
 // I don't want to write JS to do it on frontend
 #[derive(Deserialize)]
 struct OrderingBody {
-    row_id: Vec<Ordering>,
-}
-
-#[derive(Deserialize)]
-#[serde(try_from = "String")]
-struct Ordering(pub i64);
-
-impl TryFrom<String> for Ordering {
-    type Error = String;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value.parse::<i64>() {
-            Ok(v) => Ok(Ordering(v)),
-            Err(_) => Err(format!("Wrong value {value}, can not parse to i64")),
-        }
-    }
+    row_id: Vec<Stri64>,
 }
 
 #[derive(Template)]

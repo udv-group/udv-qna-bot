@@ -55,7 +55,7 @@ pub async fn get_public_questions_for_public_category(
     .map(|questions| questions.into_iter().map(|q| q.into()).collect())
 }
 
-pub async fn get_questions_for_category(
+pub async fn get_questions_by_category(
     pool: &SqlitePool,
     category_id: i64,
 ) -> sqlx::Result<Vec<Question>> {

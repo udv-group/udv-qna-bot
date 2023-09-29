@@ -7,6 +7,7 @@ use axum::{
     body::Bytes,
     extract::{Path, Query, State},
     http::HeaderMap,
+    http::StatusCode,
     routing::get,
     Json, Router,
 };
@@ -25,6 +26,16 @@ use sqlx::SqlitePool;
 use crate::AppState;
 use futures_util::stream::Stream;
 use tempfile::NamedTempFile;
+
+use super::Stri64;
+
+#[derive(Deserialize)]
+struct OrderingBody {
+    row_id: Vec<Stri64>,
+    #[serde(default)]
+    #[serde(deserialize_with = "deserialize_option_number_from_string")]
+    category: Option<i64>,
+}
 
 #[derive(TryFromMultipart)]
 struct NewQuestion {
@@ -58,7 +69,6 @@ struct NewAttachments {
     #[form_data(limit = "1GiB")]
     attachment: FieldData<NamedTempFile>,
 }
-
 
 struct FormBool(bool);
 
@@ -95,6 +105,8 @@ struct QuestionRowEdit {
 #[template(path = "questions/questions_table.html", escape = "none")]
 struct QuestionsTable {
     questions: Vec<QuestionRow>,
+    categories: Vec<Category>,
+    selected: i64,
 }
 
 #[derive(Template)]
@@ -103,13 +115,6 @@ struct QuestionsPage {
     categories: Vec<Category>,
     table: QuestionsTable,
 }
-
-#[derive(Template)]
-#[template(path = "questions/questions_reordering.html", escape = "none")]
-struct QuestionsReorderingPage {
-    questions: Vec<Question>,
-}
-
 #[derive(Template)]
 #[template(path = "questions/attachments_modal.html", escape = "none")]
 struct Attachments {
@@ -124,18 +129,38 @@ struct AttachmentRow {
     name: String,
 }
 
-async fn questions_page(State(pool): State<SqlitePool>) -> impl IntoResponse {
-    let questions = db::questions::get_all_questions(&pool).await.unwrap();
+#[derive(Template)]
+#[template(path = "questions/questions_reordering.html", escape = "none")]
+struct QuestionsReordering {
+    questions: Vec<Question>,
+    categories: Vec<Category>,
+    selected: i64,
+}
+
+async fn get_questions_for_category(pool: &SqlitePool, category: Option<i64>) -> Vec<Question> {
+    match category {
+        Some(id) => db::questions::get_questions_by_category(&pool, id)
+            .await
+            .unwrap(),
+        None => db::questions::get_all_questions(&pool).await.unwrap(),
+    }
+}
+
+async fn questions_page(
+    State(pool): State<SqlitePool>,
+    Query(QuestionsQuery { category }): Query<QuestionsQuery>,
+) -> impl IntoResponse {
+    let categories = db::categories::get_all_categories(&pool).await.unwrap();
     let table = QuestionsTable {
-        questions: questions
+        categories: categories.clone(),
+        selected: category.unwrap_or(-1),
+        questions: get_questions_for_category(&pool, category)
+            .await
             .into_iter()
             .map(|c| QuestionRow { question: c })
             .collect(),
     };
-    QuestionsPage {
-        categories: db::categories::get_all_categories(&pool).await.unwrap(),
-        table,
-    }
+    QuestionsPage { categories, table }
 }
 
 async fn get_question(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
@@ -148,17 +173,25 @@ async fn questions_table(
     State(pool): State<SqlitePool>,
     Query(QuestionsQuery { category }): Query<QuestionsQuery>,
 ) -> impl IntoResponse {
-    let questions = match category {
-        Some(id) => db::questions::get_questions_for_category(&pool, id)
-            .await
-            .unwrap(),
-        None => db::questions::get_all_questions(&pool).await.unwrap(),
-    };
     QuestionsTable {
-        questions: questions
+        categories: db::categories::get_all_categories(&pool).await.unwrap(),
+        selected: category.unwrap_or(-1),
+        questions: get_questions_for_category(&pool, category)
+            .await
             .into_iter()
             .map(|c| QuestionRow { question: c })
             .collect(),
+    }
+}
+
+async fn questions_reordering_table(
+    State(pool): State<SqlitePool>,
+    Query(QuestionsQuery { category }): Query<QuestionsQuery>,
+) -> impl IntoResponse {
+    QuestionsReordering {
+        questions: get_questions_for_category(&pool, category).await,
+        categories: db::categories::get_all_categories(&pool).await.unwrap(),
+        selected: category.unwrap_or(-1),
     }
 }
 
@@ -201,11 +234,9 @@ async fn create_question(
 }
 
 async fn edit_question(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
-    let categories = db::categories::get_all_categories(&pool).await.unwrap();
-    let question = db::questions::get_question_by_id(&pool, id).await.unwrap();
     QuestionRowEdit {
-        categories,
-        question,
+        categories: db::categories::get_all_categories(&pool).await.unwrap(),
+        question: db::questions::get_question_by_id(&pool, id).await.unwrap(),
     }
 }
 
@@ -236,7 +267,13 @@ async fn delete_question(
     Path(id): Path<i64>,
 ) -> impl IntoResponse {
     db::questions::delete_question(&pool, id).await.unwrap();
-    std::fs::remove_dir_all(static_dir.join(id.to_string())).unwrap();
+    if let Err(e) = std::fs::remove_dir_all(static_dir.join(id.to_string())) {
+        match e.kind() {
+            std::io::ErrorKind::NotFound => return StatusCode::OK,
+            _ => return StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+    StatusCode::OK
 }
 
 // Small hack to cause redirect on client side so download modal will be displayed
@@ -327,10 +364,44 @@ async fn add_attachment(
     }
 }
 
+async fn reorder(
+    State(pool): State<SqlitePool>,
+    Json(body): Json<OrderingBody>,
+) -> impl IntoResponse {
+    let ordering: Vec<db::Reorder> = body
+        .row_id
+        .into_iter()
+        .enumerate()
+        .map(|(n, v)| db::Reorder {
+            id: v.0,
+            ordering: n as i64,
+        })
+        .collect();
+
+    db::questions::reorder_questions(&pool, ordering)
+        .await
+        .unwrap();
+    let categories = db::categories::get_all_categories(&pool).await.unwrap();
+    let table = QuestionsTable {
+        categories: categories.clone(),
+        selected: body.category.unwrap_or(-1),
+        questions: get_questions_for_category(&pool, body.category)
+            .await
+            .into_iter()
+            .map(|c| QuestionRow { question: c })
+            .collect(),
+    };
+    QuestionsPage { table, categories }
+}
+
 pub fn questions_router(state: AppState) -> Router {
     Router::new()
         .route("/questions", get(questions_page).post(create_question))
         .route("/questions/table", get(questions_table))
+        .route(
+            "/questions/order",
+            get(questions_reordering_table).post(reorder),
+        )
         .route("/questions/:id/edit", get(edit_question))
         .route(
             "/questions/:id",

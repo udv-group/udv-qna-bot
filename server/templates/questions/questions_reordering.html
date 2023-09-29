@@ -28,52 +28,50 @@
           </div>
         </form>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">name</th>
-            <th scope="col">hidden</th>
-            <th scope="col"><button hx-post="/categories/order" hx-ext='json-enc' hx-include="[name='row_id']"
-                hx-target="body">Save</button>
-              <button hx-get="/categories" hx-target="body">Cancel</button>
-            </th>
-          </tr>
-        </thead>
-        <tbody class="sortable">
-          {% for question in questions.as_slice() -%}
-          <tr>
-            <td><input type='hidden' name='row_id' value='{{question.id}}' />{{question.id}}</td>
-            <td>
-              {% match question.category %}
-              {% when Some with (category) %}
-              {{category}}
-              {% when None %}
-              {% endmatch %} </td>
-            <td>{{question.question}}</td>
-            <td>{{question.answer}}</td>
-            <td>{{question.hidden}}</td>
-            <td><button class="uk-button uk-button-primary">Open Modal</button></td>
-            <td></td>
-          </tr>
+      <div id="mega-div">
+        <select id="category-select-filter" name="category">
+          <option>All</option>
+          {% for category in categories.as_slice() -%}
+          <option value="{{ category.id }}" {% if category.id==selected %}selected{% endif %}>{{category.name}}
+          </option>
           {% endfor %}
-        </tbody>
-      </table>
+        </select>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">name</th>
+              <th scope="col">hidden</th>
+              <th scope="col"><button id="order-save" hx-post="/questions/order" hx-ext='json-enc'
+                  hx-include="#mega-div" hx-target="body">Save</button>
+                <button hx-get="/questions" hx-include="#category-select-filter" hx-target="body">Cancel</button>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="sortable">
+            {% for question in questions.as_slice() -%}
+            <tr>
+              <td><input type='hidden' name='row_id' value='{{question.id}}' />{{question.id}}</td>
+              <td>
+                {% match question.category %}
+                {% when Some with (category) %}
+                {{category}}
+                {% when None %}
+                {% endmatch %} </td>
+              <td>{{question.question}}</td>
+              <td>{{question.answer}}</td>
+              <td>{{question.hidden}}</td>
+              <td><button class="uk-button uk-button-primary">Open Modal</button></td>
+              <td></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
-
 <script>
-  htmx.onLoad(function (content) {
-    var sortables = content.querySelectorAll(".sortable");
-    for (var i = 0; i < sortables.length; i++) {
-      var sortable = sortables[i];
-      new Sortable(sortable, {
-        animation: 150,
-        ghostClass: 'blue-background-class'
-      });
-    }
-  })
+  htmx.on('#order-save', 'htmx:configRequest', category_remover);
 </script>
-
 {% endblock content %}

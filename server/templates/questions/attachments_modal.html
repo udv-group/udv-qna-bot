@@ -1,30 +1,46 @@
 <div id="modal" class="uk-modal" style="display:block;">
-    <div class="uk-modal-dialog uk-modal-body">
-        <h2 class="uk-modal-title">Attachments</h2>
-        <form hx-encoding='multipart/form-data' hx-post="/questions/{{id}}/attachments" hx-swap="afterbegin"
-          hx-target="#attachments-table" id="createForm">
-          <div class="mb-3">
-            <label for="question-attachments">Attachment:</label>
-            <input type="file" name="attachment">
-          </div>
-          <div class="modal-footer">
-            <button type="submit">Create</button>
-          </div>
-        </form>
-        <table id="attachments-table">
-            <thead>
-                <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col"></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for attachment in attachments.as_slice() -%}
-                {{attachment}}
-                {% endfor %}
-            </tbody>
-        </table>
-        <button id="cancelButton" type="button"
-            _="on click take .uk-open from #modal wait 200ms then remove #modal">Close</button>
-    </div>
+  <div class="uk-modal-dialog uk-modal-body">
+    <h2 class="uk-modal-title">Attachments</h2>
+    <form id="form" hx-encoding='multipart/form-data' hx-post="/questions/{{id}}/attachments" hx-swap="afterbegin"
+      hx-target="#attachments-table" hx-on::after-request="this.reset()">
+      <div class="mb-3">
+        <label>Select attachment</label>
+        <input type="file" name="attachment" multiple>
+        <button>
+          Upload
+        </button>
+        <progress id='progress' value='0' max='100'></progress>
+      </div>
+    </form>
+    <hr>
+    <table id="attachments-table">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for attachment in attachments.as_slice() -%}
+        {{attachment}}
+        {% endfor %}
+      </tbody>
+    </table>
+    <hr>
+    <button class="uk-button uk-button-default uk-modal-close" type="button"
+      _="on click take .uk-open from #modal wait 200ms then remove #modal">Close</button>
+  </div>
 </div>
+
+<script>
+  htmx.on('#form', 'htmx:xhr:progress', function (evt) {
+    htmx.find('#progress').setAttribute('value', evt.detail.loaded / evt.detail.total * 100)
+  });
+  // window.document.getElementById("modal").addEventListener("hidden", function () {
+  //   setTimeout(function () {
+  //     window.document.getElementById("attachments-modal").innerHTML = ""
+  //   }, 10)
+  // })
+
+
+</script>

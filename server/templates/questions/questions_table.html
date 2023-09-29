@@ -1,19 +1,36 @@
-<table id="questions-table">
-    <thead>
-        <tr>
-            <th scope="col">#</th>
-            <th scope="col">Category</th>
-            <th scope="col">Question</th>
-            <th scope="col">Answer</th>
-            <th scope="col">Hidden</th>
-            <th scope="col">Attachment</th>
-            <th scope="col"><button hx-get="/questions/order" hx-target="body" hx-swap="outerHTML">Reorder</button>
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for question in questions.as_slice() -%}
-        {{ question }}
-        {% endfor %}
-    </tbody>
-</table>
+<div id="questions-body">
+    <div>
+        <label>Category filter</label>
+        <select id="category-select-filter" name="category" hx-get="/questions/table" hx-target="#questions-body">
+            <option>All</option>
+            {% for category in categories.as_slice() -%}
+            <option value="{{ category.id }}" {% if category.id==selected %}selected{% endif %}>{{category.name}}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <table id="questions-table">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Category</th>
+                <th scope="col">Question</th>
+                <th scope="col">Answer</th>
+                <th scope="col">Hidden</th>
+                <th scope="col">Attachment</th>
+                <th scope="col"><button id="ordering-button" hx-get="/questions/order" hx-target="body"
+                        hx-include="#category-select-filter" hx-swap="outerHTML">Reorder</button>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for question in questions.as_slice() -%}
+            {{ question }}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script>
+    htmx.on('#category-select-filter', 'htmx:configRequest', category_remover);
+    htmx.on('#ordering-button', 'htmx:configRequest', category_remover);
+</script>

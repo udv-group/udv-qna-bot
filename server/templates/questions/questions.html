@@ -5,76 +5,60 @@
   <div class="row">
     <div class="col">
       <div>
-        <form id="question-create" hx-encoding='multipart/form-data' hx-post="/questions" hx-swap="afterbegin" hx-target="#questions-table">
-          <div>
-            <label>Category:</label>
-            <select name="category">
-              <option>None</option>
-              {% for category in categories.as_slice() -%}
-              <option value="{{ category.id }}">{{category.name}}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="question-question">Question:</label>
-            <input type="text" class="form-control" id="question-question" name="question">
-          </div>
-          <div class="mb-3">
-            <label for="question-answer">Answer:</label>
-            <input type="text" class="form-control" id="question-answer" name="answer">
-          </div>
-          <div class="mb-3">
-            <label for="question-hidden">Hidden:</label>
-            <input type="checkbox" id="question-hidden" name="hidden">
-          </div>
-          <div class="mb-3">
-            <label for="question-attachments">Attachment:</label>
-            <input type="file" id="question-attachments" name="attachment" multiple>
-          </div>
-          <div class="modal-footer">
-            <button type="submit">Create</button>
-          </div>
-        </form>
+        <button uk-toggle="target: #new-question-modal" class="uk-button uk-button-default uk-margin-small-right"
+          type="button">Create new</button>
       </div>
       <hr>
-      <div>
-        <label>Category</label>
-        <select id="category-select" name="category" hx-get="/questions/table" hx-target="#questions-table">
-          <option>All</option>
-          {% for category in categories.as_slice() -%}
-          <option value="{{ category.id }}">{{category.name}}</option>
-          {% endfor %}
-        </select>
-      </div>
       {{ table }}
     </div>
   </div>
 </div>
 
+<!-- div to be raplaced by attachments modal to render specific question attachments -->
 <div id="attachments-modal"></div>
 
-<script>
-  let category_remover = function (evt) {
-    let category = evt.detail.parameters['category']
-    if (category === 'All') {
-      evt.detail.useUrlParams = false;
-    } else if (category === 'None') {
-      delete evt.detail.parameters['category']
-    }
-  }
-  htmx.on('#category-select', 'htmx:configRequest', category_remover);
-  htmx.on('#question-create', 'htmx:configRequest', category_remover);
 
-  // htmx.onLoad(function (content) {
-  //   var sortables = content.querySelectorAll(".sortable");
-  //   for (var i = 0; i < sortables.length; i++) {
-  //     var sortable = sortables[i];
-  //     new Sortable(sortable, {
-  //       animation: 150,
-  //       ghostClass: 'blue-background-class'
-  //     });
-  //   }
-  // })
+<div id="new-question-modal" uk-modal>
+  <div class="uk-modal-dialog uk-modal-body">
+    <h2 class="uk-modal-title">Create new question</h2>
+    <form id="question-create" hx-encoding='multipart/form-data' hx-post="/questions" hx-swap="afterbegin"
+      hx-target="#questions-table" hx-on::after-request="this.reset()">
+      <div class="uk-margin">
+        <label>Category:</label>
+        <select class="uk-select" name="category">
+          <option>None</option>
+          {% for category in categories.as_slice() -%}
+          <option value="{{ category.id }}">{{category.name}}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="uk-margin">
+        <label for="question-question">Question:</label>
+        <input type="text" class="uk-textarea form-control" id="question-question" name="question">
+      </div>
+      <div class="uk-margin">
+        <label for="question-answer">Answer:</label>
+        <input type="text" class="uk-textarea form-control" id="question-answer" name="answer">
+      </div>
+      <div class="uk-margin">
+        <label for="question-hidden">Hidden:</label>
+        <input class="uk-checkbox" type="checkbox" id="question-hidden" name="hidden">
+      </div>
+      <div class="uk-margin">
+        <label for="question-attachments">Attachment:</label>
+        <input type="file" id="question-attachments" name="attachments" multiple>
+      </div>
+      <div class="uk-margin">
+        <button class="uk-button uk-button-default uk-modal-close" id="cancelButton" type="button">Close</button>
+        <button class="uk-button uk-button-default" onclick="UIkit.modal('#new-question-modal').hide();"
+          type="submit">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  htmx.on('#question-create', 'htmx:configRequest', category_remover);
 </script>
 
 {% endblock content %}

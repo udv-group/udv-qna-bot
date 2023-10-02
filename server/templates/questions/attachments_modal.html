@@ -4,12 +4,15 @@
     <form id="form" hx-encoding='multipart/form-data' hx-post="/questions/{{id}}/attachments" hx-swap="afterbegin"
       hx-target="#attachments-table" hx-on::after-request="this.reset()">
       <div class="mb-3">
-        <label>Select attachment</label>
-        <input type="file" name="attachment" multiple>
-        <button>
-          Upload
-        </button>
-        <progress id='progress' value='0' max='100'></progress>
+        <div class="uk-margin" uk-margin>
+          <div uk-form-custom="target: true">
+            <input type="file" name="attachment" multiple aria-label="Custom controls">
+            <input class="uk-input uk-form-width-medium" type="text" placeholder="Select file"
+              aria-label="Custom controls" disabled>
+          </div>
+          <button type="submit" class="uk-button uk-button-default">Submit</button>
+        </div>
+        <progress class="uk-progress" id='progress' value='0' max='100'></progress>
       </div>
     </form>
     <hr>

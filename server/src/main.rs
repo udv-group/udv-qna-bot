@@ -2,7 +2,6 @@ use askama::Template;
 use axum::{extract::FromRef, http::StatusCode, response::Html, routing::get, Router};
 use routes::{category_router, questions_router, users_router};
 use sqlx::SqlitePool;
-
 use std::fs::create_dir;
 use std::path::PathBuf;
 use tower_http::services::ServeDir;
@@ -26,10 +25,8 @@ async fn main() {
     if !static_dir.exists() {
         create_dir(&static_dir).unwrap();
     }
-    let _static_service = ServeDir::new(&static_dir);
 
     let state = AppState { pool, static_dir };
-
     let app = Router::new()
         .route("/", get(index))
         .nest_service("/static", ServeDir::new("static"))

@@ -115,7 +115,7 @@ async fn reply_with_answer(
         } else {
             log::error!("File {:#?} is not found!", filepath);
         }
-    };
+    }
     Ok(())
 }
 

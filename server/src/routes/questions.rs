@@ -1,4 +1,3 @@
-use crate::deserializers::deserialize_bool_from_checkbox;
 use anyhow::anyhow;
 use askama::Template;
 use askama_axum::IntoResponse;
@@ -14,20 +13,18 @@ use axum::{
 use axum_typed_multipart::{
     FieldData, FieldMetadata, TryFromChunks, TryFromMultipart, TypedMultipart, TypedMultipartError,
 };
+use futures_util::stream::Stream;
+use serde::Deserialize;
 use serde_aux::prelude::deserialize_option_number_from_string;
-
+use sqlx::SqlitePool;
 use std::path::PathBuf;
+use tempfile::NamedTempFile;
 
 use db::{Category, Question};
 
-use serde::Deserialize;
-use sqlx::SqlitePool;
-
+use crate::deserializers::deserialize_bool_from_checkbox;
+use crate::deserializers::Stri64;
 use crate::AppState;
-use futures_util::stream::Stream;
-use tempfile::NamedTempFile;
-
-use super::Stri64;
 
 #[derive(Deserialize)]
 struct OrderingBody {
@@ -139,10 +136,10 @@ struct QuestionsReordering {
 
 async fn get_questions_for_category(pool: &SqlitePool, category: Option<i64>) -> Vec<Question> {
     match category {
-        Some(id) => db::questions::get_questions_by_category(&pool, id)
+        Some(id) => db::questions::get_questions_by_category(pool, id)
             .await
             .unwrap(),
-        None => db::questions::get_all_questions(&pool).await.unwrap(),
+        None => db::questions::get_all_questions(pool).await.unwrap(),
     }
 }
 

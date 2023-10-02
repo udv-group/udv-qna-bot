@@ -1,5 +1,3 @@
-use crate::deserializers::deserialize_bool_from_checkbox;
-use crate::AppState;
 use askama::Template;
 use axum::{
     extract::{Path, State},
@@ -8,11 +6,14 @@ use axum::{
     routing::{delete, get, post},
     Json, Router,
 };
-use db::Category;
 use serde::Deserialize;
 use sqlx::SqlitePool;
 
-use super::Stri64;
+use db::Category;
+
+use crate::deserializers::deserialize_bool_from_checkbox;
+use crate::deserializers::Stri64;
+use crate::AppState;
 
 #[derive(Deserialize)]
 struct NewCategory {

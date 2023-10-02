@@ -5,7 +5,7 @@ Q&A bot for internal use at UDV
 ### Crates
 * bot - telegram bot 
 * cli - CLI tool for quick database backups
-* cms - web server for managing bot data
+* server - web server for managing bot data
 * db - collections of common database related functions
 
 ### Directories
@@ -72,7 +72,24 @@ cargo run -p bot
 ```
 
 ### CMS
-To start CMS server run
+To start server run
 ```
-cargo run -p cms
+cargo run -p server
 ```
+Log level can be adjusted with environmental variable RUST_LOG
+```
+RUST_LOG=tower_http=trace cargo run -p server
+```
+
+## Technology
+### Web
+- Server: [axum](https://github.com/tokio-rs/axum)
+- Templates: [askama](https://github.com/djc/askama)
+- Client-side rendering: [htmx](https://htmx.org)
+- CSS: [Uikit](https://getuikit.com)
+
+### Bot
+- Framework: [teloxide](https://github.com/teloxide/teloxide)
+
+### Database
+- Migrations and queries: [sqlx](https://github.com/launchbadge/sqlx)

@@ -1,7 +1,8 @@
 <tr>
     <td>{{ name }}</td>
-    <td><button type="button" hx-get="/questions/{{question_id}}/attachments/{{name}}">Download</button>
+    <td><button type="button" class="uk-button uk-button-default"
+            hx-get="/questions/{{question_id}}/attachments/{{name}}">Download</button>
     </td>
-    <td><button type="button" class="uk-button uk-button-default" hx-target="closest tr" hx-swap="outerHTML"
+    <td><button type="button" class="uk-button uk-button-danger" hx-target="closest tr" hx-swap="outerHTML"
             hx-delete="/questions/{{question_id}}/attachments/{{name}}">Delete</button></td>
 </tr>

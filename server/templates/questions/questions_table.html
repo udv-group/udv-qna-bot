@@ -1,7 +1,8 @@
 <div id="questions-body">
     <div>
         <label>Category filter</label>
-        <select id="category-select-filter" name="category" hx-get="/questions/table" hx-target="#questions-body">
+        <select class="uk-select uk-width-small" id="category-select-filter" name="category" hx-get="/questions/table"
+            hx-target="#questions-body">
             <option>All</option>
             {% for category in categories.as_slice() -%}
             <option value="{{ category.id }}" {% if category.id==selected %}selected{% endif %}>{{category.name}}
@@ -9,17 +10,18 @@
             {% endfor %}
         </select>
     </div>
-    <table id="questions-table">
+    <table class="uk-table uk-table-middle uk-table-divider" id="questions-table">
         <thead>
             <tr>
-                <th scope="col">#</th>
-                <th scope="col">Category</th>
-                <th scope="col">Question</th>
-                <th scope="col">Answer</th>
-                <th scope="col">Hidden</th>
-                <th scope="col">Attachment</th>
-                <th scope="col"><button id="ordering-button" hx-get="/questions/order" hx-target="body"
-                        hx-include="#category-select-filter" hx-swap="outerHTML">Reorder</button>
+                <th class="uk-table-shrink">Id</th>
+                <th class="uk-table-expand">Category</th>
+                <th class="uk-table-expand">Question</th>
+                <th class="uk-table-expand">Answer</th>
+                <th class="uk-table-shrink">Hidden</th>
+                <th class="uk-table-shrink">Attachment</th>
+                <th class="uk-table-expand"><button class="uk-button uk-button-default" id="ordering-button"
+                        hx-get="/questions/order" hx-target="body" hx-include="#category-select-filter"
+                        hx-swap="outerHTML">Reorder</button>
                 </th>
             </tr>
         </thead>

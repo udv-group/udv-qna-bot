@@ -5,46 +5,31 @@
   <div class="row">
     <div class="col">
       <div>
-        <form hx-encoding='multipart/form-data' hx-post="/questions/new" hx-swap="afterbegin"
-          hx-target="#categories-table" id="createForm">
-          <div class="mb-3">
-            <label for="question-text">Question:</label>
-            <input type="text" class="form-control" id="question-question" name="question" disabled>
-          </div>
-          <div class="mb-3">
-            <label for="question-text">Answer:</label>
-            <input type="text" class="form-control" id="question-answer" name="answer" disabled>
-          </div>
-          <div class="mb-3">
-            <label for="question-hidden">Hidden:</label>
-            <input type="checkbox" id="question-hidden" name="hidden" disabled>
-          </div>
-          <div class="mb-3">
-            <label for="question-attachments">Attachment:</label>
-            <input type="file" id="question-attachments" name="attachment" disabled>
-          </div>
-          <div class="modal-footer">
-            <button type="submit">Create</button>
-          </div>
-        </form>
+        <button disabled class="uk-button uk-button-default uk-margin-small-right" type="button">Create new</button>
       </div>
+      <hr>
       <div id="mega-div">
-        <select id="category-select-filter" name="category">
+        <label>Category filter</label>
+        <select class="uk-select uk-width-small" disabled id="category-select-filter" name="category">
           <option>All</option>
           {% for category in categories.as_slice() -%}
           <option value="{{ category.id }}" {% if category.id==selected %}selected{% endif %}>{{category.name}}
           </option>
           {% endfor %}
         </select>
-        <table>
+        <table class="uk-table uk-table-middle uk-table-divider">
           <thead>
             <tr>
-              <th scope="col">#</th>
-              <th scope="col">name</th>
-              <th scope="col">hidden</th>
-              <th scope="col"><button id="order-save" hx-post="/questions/order" hx-ext='json-enc'
-                  hx-include="#mega-div" hx-target="body">Save</button>
-                <button hx-get="/questions" hx-include="#category-select-filter" hx-target="body">Cancel</button>
+              <th class="uk-table-shrink">Id</th>
+              <th class="uk-table-expand">Category</th>
+              <th class="uk-table-expand">Question</th>
+              <th class="uk-table-expand">Answer</th>
+              <th class="uk-table-shrink">Hidden</th>
+              <th class="uk-table-shrink">Attachment</th>
+              <th class="uk-table-expand"><button class="uk-button uk-button-primary" id="order-save"
+                  hx-post="/questions/order" hx-ext='json-enc' hx-include="#mega-div" hx-target="body">Save</button>
+                <button class="uk-button uk-button-danger" hx-get="/questions" hx-include="#category-select-filter"
+                  hx-target="body">Cancel</button>
               </th>
             </tr>
           </thead>
@@ -61,7 +46,7 @@
               <td>{{question.question}}</td>
               <td>{{question.answer}}</td>
               <td>{{question.hidden}}</td>
-              <td><button class="uk-button uk-button-primary">Open Modal</button></td>
+              <td><button disabled class="uk-button uk-button-default">Attachments</button></td>
               <td></td>
             </tr>
             {% endfor %}

@@ -4,38 +4,43 @@
 <div class="container">
   <div class="row">
     <div class="col">
-      <div hx-ext='json-enc'>
+      <hr>
+      <div style="padding-left: 10px;" hx-ext='json-enc'>
         <form hx-post="/categories/new" hx-swap="afterbegin" hx-target="#categories-table" id="createForm">
           <div class="mb-3">
             <label for="category-text">Name:</label>
-            <input type="text" class="form-control" id="category-text" name="name">
+            <input type="text" class="uk-input uk-width-small" id="category-text" name="name">
           </div>
           <div class="mb-3">
             <label for="category-hidden">Hidden:</label>
-            <input type="checkbox" id="category-hidden" name="hidden">
+            <input class="uk-checkbox" type="checkbox" id="category-hidden" name="hidden">
           </div>
-          <div class="modal-footer">
-            <button type="submit">Create</button>
+          <div>
+            <button class="uk-button uk-button-default" type="submit">Create</button>
           </div>
         </form>
       </div>
       <hr>
-      <table id="categories-table">
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">name</th>
-            <th scope="col">hidden</th>
-            <th scope="col"><button hx-get="/categories/order" hx-target="body" hx-swap="outerHTML">Reorder</button>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for category in categories.as_slice() -%}
-          {{ category }}
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="uk-width-1-2">
+        <table class="uk-table uk-table-divider" id="categories-table">
+          <thead>
+            <tr>
+              <th class="uk-table-shrink">#</th>
+              <th class="uk-table-expand">name</th>
+              <th class="uk-table-shrink">hidden</th>
+              <th class="uk-table-expand"><button class="uk-button uk-button-default" hx-get="/categories/order"
+                  hx-target="body" hx-swap="outerHTML">Reorder</button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for category in categories.as_slice() -%}
+            {{ category }}
+            {% endfor %}
+          </tbody>
+        </table>
+
+      </div>
     </div>
   </div>
 </div>

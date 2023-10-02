@@ -4,47 +4,50 @@
 <div class="container">
   <div class="row">
     <div class="col">
-      <div hx-ext='json-enc'>
-        <form hx-post="/categories/new" hx-swap="afterbegin" hx-target="closest table" id="createForm">
+      <hr>
+      <div style="padding-left: 10px;" hx-ext='json-enc'>
+        <form hx-post="/categories/new" hx-swap="afterbegin" hx-target="#categories-table" id="createForm">
           <div class="mb-3">
             <label for="category-text">Name:</label>
-            <input type="text" class="form-control" id="category-text" name="name" disabled>
+            <input type="text" class="uk-input uk-width-small" id="category-text" name="name" disabled>
           </div>
           <div class="mb-3">
             <label for="category-hidden">Hidden:</label>
-            <input type="checkbox" id="category-hidden" name="hidden" disabled>
-
+            <input class="uk-checkbox" type="checkbox" id="category-hidden" name="hidden" disabled>
           </div>
-          <div class="modal-footer">
-            <button type="submit" disabled>Create</button>
+          <div>
+            <button class="uk-button uk-button-default" type="submit" disabled>Create</button>
           </div>
         </form>
       </div>
       <hr>
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">name</th>
-            <th scope="col">hidden</th>
-            <th scope="col"><button hx-post="/categories/order" hx-ext='json-enc' hx-include="[name='row_id']"
-                hx-target="body">Save</button>
-              <button hx-get="/categories" hx-target="body">Cancel</button>
-            </th>
-          </tr>
-        </thead>
-        <tbody class="sortable">
-          {% for category in categories.as_slice() -%}
-          <tr>
-            <td><input type='hidden' name='row_id' value='{{category.id}}' />{{category.id}}</td>
-            <td>{{category.name}}</td>
-            <td>{{category.hidden}}</td>
-            <td>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="uk-width-1-2">
+        <table class="uk-table uk-table-divider">
+          <thead>
+            <tr>
+              <th class="uk-table-shrink">#</th>
+              <th class="uk-table-expand">Name</th>
+              <th class="uk-table-shrink">Hidden</th>
+              <th class="uk-table-expand"><button class="uk-button uk-button-default" hx-post="/categories/order"
+                  hx-ext='json-enc' hx-include="[name='row_id']" hx-target="body">Save</button>
+                <button class="uk-button uk-button-danger" hx-get="/categories" hx-target="body">Cancel</button>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="sortable">
+            {% for category in categories.as_slice() -%}
+            <tr>
+              <td><input type='hidden' name='row_id' value='{{category.id}}' />{{category.id}}</td>
+              <td>{{category.name}}</td>
+              <td>{{category.hidden}}</td>
+              <td>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+      </div>
     </div>
   </div>
 </div>

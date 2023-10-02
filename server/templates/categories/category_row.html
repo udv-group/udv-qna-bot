@@ -3,8 +3,8 @@
   <td>{{category.name}}</td>
   <td>{{category.hidden}}</td>
   <td>
-    <button class="btn btn-danger" hx-get="/categories/{{category.id}}/edit" hx-target="closest tr" hx-swap="outerHTML"
-      hx-trigger="edit" _="on click
+    <button class="uk-button uk-button-primary" hx-get="/categories/{{category.id}}/edit" hx-target="closest tr"
+      hx-swap="outerHTML" hx-trigger="edit" _="on click
                      if .editing is not empty
                        Swal.fire({title: 'Already Editing',
                                   showCancelButton: true,
@@ -18,7 +18,7 @@
                      trigger edit">
       Edit
     </button>
-    <button type="button" hx-confirm="Are you sure?" hx-delete="/categories/{{category.id}}" hx-target="closest tr"
-      hx-swap="outerHTML">Delete</button>
+    <button class="uk-button uk-button-danger" type="button" hx-confirm="Are you sure?"
+      hx-delete="/categories/{{category.id}}" hx-target="closest tr" hx-swap="outerHTML">Delete</button>
   </td>
 </tr>

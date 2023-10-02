@@ -3,13 +3,14 @@
     <td><input name='name' value={{category.name}}></td>
     <td><input type="checkbox" id="category-hidden" name="hidden" {% if category.hidden %}checked{% endif %}></td>
     <td>
-        <button class="btn btn-danger" hx-get="/categories/{{category.id}}" hx-include="" hx-target="closest tr"
-            hx-swap="outerHTML">
-            Cancel
-        </button>
-        <button class="btn btn-danger" hx-put="/categories/{{category.id}}" hx-include="closest tr"
+        <button class="uk-button uk-button-default" hx-put="/categories/{{category.id}}" hx-include="closest tr"
             hx-target="closest tr" hx-swap="outerHTML">
             Save
         </button>
+        <button class="uk-button uk-button-danger" hx-get="/categories/{{category.id}}" hx-include=""
+            hx-target="closest tr" hx-swap="outerHTML">
+            Cancel
+        </button>
+
     </td>
 </tr>

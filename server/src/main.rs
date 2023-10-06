@@ -2,7 +2,7 @@ use askama::Template;
 use axum::{extract::FromRef, http::StatusCode, response::Html, routing::get, Router};
 use routes::{category_router, questions_router, users_router};
 use sqlx::SqlitePool;
-use std::fs::create_dir;
+use std::fs::create_dir_all;
 use std::path::PathBuf;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
@@ -21,9 +21,13 @@ async fn main() {
     tracing_subscriber::fmt::init();
     let path = dotenv::var("DB_PATH").expect("DB_PATH must be set");
     let pool = db::establish_connection(&path).await.unwrap();
-    let static_dir = PathBuf::from("static");
+    let static_dir =
+        PathBuf::from(dotenv::var("STATIC_DIR").expect("Variable STATIC_DIR should be set"));
+    if !static_dir.is_dir() {
+        panic!("Variable STATIC_DIT should be a directory or not exist");
+    }
     if !static_dir.exists() {
-        create_dir(&static_dir).unwrap();
+        create_dir_all(&static_dir).unwrap();
     }
 
     let state = AppState { pool, static_dir };

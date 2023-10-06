@@ -4,12 +4,14 @@
         <select class="uk-select" name="category">
             <option>None</option>
             {% for category in categories.as_slice() -%}
-            <option value="{{ category.id }}">{{category.name}}</option>
+            <option value="{{ category.id }}" {% match question.category %} {% when Some with (q_category) %} {% if
+                category.id==q_category.id %}selected{% endif %} {% when None %} {% endmatch %}>
+                {{category.name}}</option>
             {% endfor %}
         </select>
     </td>
-    <td><input class="uk-input" name='question' value={{question.question}}></td>
-    <td><input class="uk-input" name='answer' value={{question.question}}></td>
+    <td><input class="uk-input" name="question" value="{{+question.question+}}"></td>
+    <td><input class="uk-input" name="answer" value="{{+question.answer+}}"'></td>
     <td><input class="uk-checkbox" type="checkbox" id="question-hidden" name="hidden" {% if question.hidden %}checked{%
             endif %}></td>
 
@@ -27,7 +29,7 @@
     </td>
 </tr>
 <script>
-    htmx.on('#question-update', 'htmx:configRequest', (evt) => {
+    htmx.on(' #question-update', 'htmx:configRequest', (evt) => {
         if (evt.detail.parameters['category'] === 'None') {
             delete evt.detail.parameters['category']
         }

@@ -2,7 +2,7 @@ mod auth;
 mod group_chat;
 mod private_chat;
 
-use std::path::PathBuf;
+use std::{path::PathBuf, fs::create_dir_all};
 use std::sync::Arc;
 
 use teloxide::{
@@ -18,12 +18,14 @@ async fn run() -> anyhow::Result<()> {
     let static_dir =
         PathBuf::from(dotenv::var("STATIC_DIR").expect("Variable STATIC_DIR should be set"));
     if !static_dir.is_dir() {
-        panic!("Variable STATIC_DIT should contain valid path");
+        panic!("Variable STATIC_DIT should be a directory or not exist");
     }
-    let path = dotenv::var("DB_PATH").expect("DB_PATH must be set");
-    let conn = Arc::new(db::establish_connection(&path).await?);
-    let bot = Bot::from_env();
-    let storage = SqliteStorage::open(&path, Json).await.unwrap();
+    if !static_dir.exists() {
+        create_dir_all(&static_dir).unwrap();
+    }
+    let db_path = dotenv::var("DB_PATH").expect("DB_PATH must be set");
+    let conn = Arc::new(db::establish_connection(&db_path).await?);
+    let storage = SqliteStorage::open(&db_path, Json).await.unwrap();
 
     let handler = dptree::entry()
         .branch(
@@ -35,7 +37,7 @@ async fn run() -> anyhow::Result<()> {
                 .branch(private_chat::make_private_chat_branch()),
         );
 
-    Dispatcher::builder(bot, handler)
+    Dispatcher::builder(Bot::from_env(), handler)
         .enable_ctrlc_handler()
         .dependencies(dptree::deps![conn, storage, Arc::new(static_dir)])
         .default_handler(|upd| async move {

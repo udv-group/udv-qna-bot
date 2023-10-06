@@ -11,7 +11,9 @@ use teloxide::{
     dispatching::dialogue::{serializer::Json, SqliteStorage},
     dispatching::DpHandlerDescription,
     prelude::*,
-    types::{InputFile, KeyboardButton, KeyboardMarkup, KeyboardRemove},
+    types::{
+        InputFile, InputMedia, InputMediaDocument, KeyboardButton, KeyboardMarkup, KeyboardRemove,
+    },
     utils::command::BotCommands,
 };
 
@@ -23,11 +25,9 @@ use crate::auth;
 type MyDialogue = Dialogue<State, SqliteStorage<Json>>;
 
 #[derive(BotCommands, Clone)]
-#[command(description = "These commands are supported:")]
+#[command(rename_rule = "lowercase")]
 enum Command {
-    #[command(rename = "lowercase", description = "Display this text")]
     Help,
-    #[command(rename = "lowercase", description = "Start")]
     Start,
 }
 
@@ -104,17 +104,27 @@ async fn reply_with_answer(
         .into_iter()
         .map(|chunk| chunk.collect::<String>())
         .collect();
+
+    let media_group: Vec<InputMedia> = question
+        .attachments
+        .iter()
+        .filter_map(|att| {
+            let filepath = static_dir.join(question.id.to_string()).join(att);
+            if filepath.is_file() {
+                Some(InputMedia::Document(InputMediaDocument::new(
+                    InputFile::file(filepath),
+                )))
+            } else {
+                log::error!("File {:#?} is not found!", filepath);
+                None
+            }
+        })
+        .collect();
     for data in data_v {
-        bot.send_message(msg.chat.id, data).await.unwrap();
+        bot.send_message(msg.chat.id, data).await?;
     }
-    for att in question.attachments.iter() {
-        let filepath = static_dir.join(att);
-        if filepath.is_file() {
-            bot.send_document(msg.chat.id, InputFile::file(filepath))
-                .await?;
-        } else {
-            log::error!("File {:#?} is not found!", filepath);
-        }
+    if media_group.len() > 0 {
+        bot.send_media_group(msg.chat.id, media_group).await?;
     }
     Ok(())
 }
@@ -144,7 +154,13 @@ async fn on_question_select(
                 .await?;
         }
         selected_question => {
-            match db::questions::get_question(conn.borrow(), selected_question, &category).await {
+            match db::questions::get_question_by_category_name(
+                conn.borrow(),
+                selected_question,
+                &category,
+            )
+            .await
+            {
                 Ok(question) => reply_with_answer(bot, msg, static_dir, question).await?,
                 Err(_) => {
                     bot.send_message(

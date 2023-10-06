@@ -92,7 +92,7 @@ fn make_keyboard(
 }
 
 async fn reply_with_answer(
-    bot: AutoSend<Bot>,
+    bot: Bot,
     msg: Message,
     static_dir: Arc<PathBuf>,
     question: Question,
@@ -120,7 +120,7 @@ async fn reply_with_answer(
 }
 
 async fn on_question_select(
-    bot: AutoSend<Bot>,
+    bot: Bot,
     msg: Message,
     dialogue: MyDialogue,
     category: String,
@@ -161,7 +161,7 @@ async fn on_question_select(
 }
 
 async fn on_category_select(
-    bot: AutoSend<Bot>,
+    bot: Bot,
     msg: Message,
     dialogue: MyDialogue,
     conn: Arc<SqlitePool>,
@@ -200,7 +200,7 @@ async fn on_category_select(
 }
 
 async fn handle_private_chat_member(
-    _bot: AutoSend<Bot>,
+    _bot: Bot,
     msg: ChatMemberUpdated,
     storage: Arc<SqliteStorage<Json>>,
 ) -> anyhow::Result<()> {
@@ -222,7 +222,7 @@ async fn handle_private_chat_member(
 }
 
 async fn on_commands(
-    bot: AutoSend<Bot>,
+    bot: Bot,
     msg: Message,
     cmd: Command,
     dialogue: MyDialogue,
@@ -244,7 +244,7 @@ async fn on_commands(
     Ok(())
 }
 
-async fn handle_not_authenticated(bot: AutoSend<Bot>, msg: Message) -> anyhow::Result<()> {
+async fn handle_not_authenticated(bot: Bot, msg: Message) -> anyhow::Result<()> {
     bot.send_message(
         msg.chat.id,
         "You are not authorized to use this bot, contact the admin for authentication",

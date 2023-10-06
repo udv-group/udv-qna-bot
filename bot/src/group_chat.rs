@@ -1,10 +1,9 @@
 use crate::dptree;
-use teloxide::adaptors::AutoSend;
 use teloxide::types::{ChatKind, PublicChatKind, Update};
 use teloxide::Bot;
 use teloxide::{dispatching::DpHandlerDescription, prelude::*};
 
-pub async fn handle_group_chat(_bot: AutoSend<Bot>) -> anyhow::Result<()> {
+pub async fn handle_group_chat(_bot: Bot) -> anyhow::Result<()> {
     log::info!("GroupMessage");
     Ok(())
 }

@@ -26,6 +26,8 @@ use crate::deserializers::deserialize_bool_from_checkbox;
 use crate::deserializers::Stri64;
 use crate::AppState;
 
+use super::ApiResponse;
+
 #[derive(Deserialize)]
 struct OrderingBody {
     row_id: Vec<Stri64>,
@@ -134,69 +136,74 @@ struct QuestionsReordering {
     selected: i64,
 }
 
-async fn get_questions_for_category(pool: &SqlitePool, category: Option<i64>) -> Vec<Question> {
-    match category {
-        Some(id) => db::questions::get_questions_by_category(pool, id)
-            .await
-            .unwrap(),
-        None => db::questions::get_all_questions(pool).await.unwrap(),
-    }
+async fn get_questions_for_category(
+    pool: &SqlitePool,
+    category: Option<i64>,
+) -> sqlx::Result<Vec<Question>> {
+    let questions = match category {
+        Some(id) => db::questions::get_questions_by_category(pool, id).await?,
+        None => db::questions::get_all_questions(pool).await?,
+    };
+    Ok(questions)
 }
 
 async fn questions_page(
     State(pool): State<SqlitePool>,
     Query(QuestionsQuery { category }): Query<QuestionsQuery>,
-) -> impl IntoResponse {
-    let categories = db::categories::get_all_categories(&pool).await.unwrap();
+) -> ApiResponse<QuestionsPage> {
+    let categories = db::categories::get_all_categories(&pool).await?;
     let table = QuestionsTable {
         categories: categories.clone(),
         selected: category.unwrap_or(-1),
         questions: get_questions_for_category(&pool, category)
-            .await
+            .await?
             .into_iter()
             .map(|c| QuestionRow { question: c })
             .collect(),
     };
-    QuestionsPage { categories, table }
+    Ok(QuestionsPage { categories, table })
 }
 
-async fn get_question(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
-    QuestionRow {
-        question: db::questions::get_question_by_id(&pool, id).await.unwrap(),
-    }
+async fn get_question(
+    State(pool): State<SqlitePool>,
+    Path(id): Path<i64>,
+) -> ApiResponse<QuestionRow> {
+    Ok(QuestionRow {
+        question: db::questions::get_question_by_id(&pool, id).await?,
+    })
 }
 
 async fn questions_table(
     State(pool): State<SqlitePool>,
     Query(QuestionsQuery { category }): Query<QuestionsQuery>,
-) -> impl IntoResponse {
-    QuestionsTable {
-        categories: db::categories::get_all_categories(&pool).await.unwrap(),
+) -> ApiResponse<QuestionsTable> {
+    Ok(QuestionsTable {
+        categories: db::categories::get_all_categories(&pool).await?,
         selected: category.unwrap_or(-1),
         questions: get_questions_for_category(&pool, category)
-            .await
+            .await?
             .into_iter()
             .map(|c| QuestionRow { question: c })
             .collect(),
-    }
+    })
 }
 
 async fn questions_reordering_table(
     State(pool): State<SqlitePool>,
     Query(QuestionsQuery { category }): Query<QuestionsQuery>,
-) -> impl IntoResponse {
-    QuestionsReordering {
-        questions: get_questions_for_category(&pool, category).await,
-        categories: db::categories::get_all_categories(&pool).await.unwrap(),
+) -> ApiResponse<QuestionsReordering> {
+    Ok(QuestionsReordering {
+        questions: get_questions_for_category(&pool, category).await?,
+        categories: db::categories::get_all_categories(&pool).await?,
         selected: category.unwrap_or(-1),
-    }
+    })
 }
 
 async fn create_question(
     State(pool): State<SqlitePool>,
     State(static_dir): State<PathBuf>,
     TypedMultipart(form): TypedMultipart<NewQuestion>,
-) -> impl IntoResponse {
+) -> ApiResponse<QuestionRow> {
     let info: Vec<(String, NamedTempFile)> = form
         .attachments
         .into_iter()
@@ -215,34 +222,35 @@ async fn create_question(
         form.hidden.map(|v| v.0).unwrap_or(false),
         0,
     )
-    .await
-    .unwrap();
-    info.into_iter().for_each(|(name, contents)| {
+    .await?;
+    for (name, contents) in info.into_iter() {
         let question_dir = static_dir.join(id.to_string());
-        std::fs::create_dir_all(&question_dir).unwrap();
-
-        std::fs::copy(contents.path(), question_dir.join(name)).unwrap();
-        std::fs::remove_file(contents.path()).unwrap();
-    });
-
-    QuestionRow {
-        question: db::questions::get_question_by_id(&pool, id).await.unwrap(),
+        std::fs::create_dir_all(&question_dir)?;
+        std::fs::copy(contents.path(), question_dir.join(name))?;
+        std::fs::remove_file(contents.path())?;
     }
+
+    Ok(QuestionRow {
+        question: db::questions::get_question_by_id(&pool, id).await?,
+    })
 }
 
-async fn edit_question(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
-    QuestionRowEdit {
-        categories: db::categories::get_all_categories(&pool).await.unwrap(),
-        question: db::questions::get_question_by_id(&pool, id).await.unwrap(),
-    }
+async fn edit_question(
+    State(pool): State<SqlitePool>,
+    Path(id): Path<i64>,
+) -> ApiResponse<QuestionRowEdit> {
+    Ok(QuestionRowEdit {
+        categories: db::categories::get_all_categories(&pool).await?,
+        question: db::questions::get_question_by_id(&pool, id).await?,
+    })
 }
 
 async fn update_question(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
     Json(form): Json<QuestionUpdate>,
-) -> impl IntoResponse {
-    let question = db::questions::get_question_by_id(&pool, id).await.unwrap();
+) -> ApiResponse<QuestionRow> {
+    let question = db::questions::get_question_by_id(&pool, id).await?;
     db::questions::update_question(
         &pool,
         id,
@@ -252,40 +260,43 @@ async fn update_question(
         question.attachments.iter().map(|a| a.as_str()).collect(),
         form.hidden.unwrap_or(false),
     )
-    .await
-    .unwrap();
-    let question = db::questions::get_question_by_id(&pool, id).await.unwrap();
-    QuestionRow { question }
+    .await?;
+    let question = db::questions::get_question_by_id(&pool, id).await?;
+    Ok(QuestionRow { question })
 }
 
 async fn delete_question(
     State(pool): State<SqlitePool>,
     State(static_dir): State<PathBuf>,
     Path(id): Path<i64>,
-) -> impl IntoResponse {
-    db::questions::delete_question(&pool, id).await.unwrap();
+) -> ApiResponse<StatusCode> {
+    db::questions::delete_question(&pool, id).await?;
     if let Err(e) = std::fs::remove_dir_all(static_dir.join(id.to_string())) {
         match e.kind() {
-            std::io::ErrorKind::NotFound => return StatusCode::OK,
-            _ => return StatusCode::INTERNAL_SERVER_ERROR,
+            std::io::ErrorKind::NotFound => return Ok(StatusCode::OK),
+            _ => return Ok(StatusCode::INTERNAL_SERVER_ERROR),
         }
     }
-    StatusCode::OK
+    Ok(StatusCode::OK)
 }
 
 // Small hack to cause redirect on client side so download modal will be displayed
-async fn download_attachment(Path((id, file_name)): Path<(i64, String)>) -> HeaderMap {
+async fn download_attachment(Path((id, file_name)): Path<(i64, String)>) -> impl IntoResponse {
     let mut headers = HeaderMap::new();
-    headers.insert(
-        "HX-Redirect",
-        format!("/static/{}/{}", id, file_name).parse().unwrap(),
-    );
-    headers
+    let val = match format!("/static/{}/{}", id, file_name).parse() {
+        Ok(v) => v,
+        Err(err) => return (StatusCode::INTERNAL_SERVER_ERROR, format!("{}", err)).into_response(),
+    };
+    headers.insert("HX-Redirect", val);
+    headers.into_response()
 }
 
-async fn attachments(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
-    let question = db::questions::get_question_by_id(&pool, id).await.unwrap();
-    Attachments {
+async fn attachments(
+    State(pool): State<SqlitePool>,
+    Path(id): Path<i64>,
+) -> ApiResponse<Attachments> {
+    let question = db::questions::get_question_by_id(&pool, id).await?;
+    Ok(Attachments {
         id,
         attachments: question
             .attachments
@@ -295,17 +306,20 @@ async fn attachments(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> imp
                 name: a,
             })
             .collect(),
-    }
+    })
 }
 
 async fn delete_attachment(
     State(static_dir): State<PathBuf>,
     State(pool): State<SqlitePool>,
     Path((id, file_name)): Path<(i64, String)>,
-) -> impl IntoResponse {
-    let mut question = db::questions::get_question_by_id(&pool, id).await.unwrap();
+) -> ApiResponse<StatusCode> {
+    let mut question = db::questions::get_question_by_id(&pool, id).await?;
     question.attachments.sort();
-    let idx = question.attachments.binary_search(&file_name).unwrap();
+    let idx = match question.attachments.binary_search(&file_name) {
+        Ok(idx) => idx,
+        Err(_) => return Ok(StatusCode::OK),
+    };
     question.attachments.remove(idx);
     db::questions::update_question(
         &pool,
@@ -316,10 +330,10 @@ async fn delete_attachment(
         question.attachments.iter().map(|a| a.as_str()).collect(),
         question.hidden,
     )
-    .await
-    .unwrap();
+    .await?;
 
-    std::fs::remove_file(static_dir.join(id.to_string()).join(file_name)).unwrap();
+    std::fs::remove_file(static_dir.join(id.to_string()).join(file_name))?;
+    Ok(StatusCode::OK)
 }
 
 async fn add_attachment(
@@ -327,13 +341,13 @@ async fn add_attachment(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
     TypedMultipart(form): TypedMultipart<NewAttachments>,
-) -> impl IntoResponse {
+) -> ApiResponse<AttachmentRow> {
     let file_name = form
         .attachment
         .metadata
         .file_name
         .unwrap_or("random".to_owned());
-    let mut question = db::questions::get_question_by_id(&pool, id).await.unwrap();
+    let mut question = db::questions::get_question_by_id(&pool, id).await?;
     question.attachments.push(file_name.clone());
     db::questions::update_question(
         &pool,
@@ -344,27 +358,25 @@ async fn add_attachment(
         question.attachments.iter().map(|a| a.as_str()).collect(),
         question.hidden,
     )
-    .await
-    .unwrap();
+    .await?;
     let question_dir = static_dir.join(id.to_string());
-    std::fs::create_dir_all(&question_dir).unwrap();
+    std::fs::create_dir_all(&question_dir)?;
 
     std::fs::copy(
         form.attachment.contents.path(),
         question_dir.join(&file_name),
-    )
-    .unwrap();
-    std::fs::remove_file(form.attachment.contents.path()).unwrap();
-    AttachmentRow {
+    )?;
+    std::fs::remove_file(form.attachment.contents.path())?;
+    Ok(AttachmentRow {
         question_id: id,
         name: file_name,
-    }
+    })
 }
 
 async fn reorder(
     State(pool): State<SqlitePool>,
     Json(body): Json<OrderingBody>,
-) -> impl IntoResponse {
+) -> ApiResponse<QuestionsPage> {
     let ordering: Vec<db::Reorder> = body
         .row_id
         .into_iter()
@@ -375,20 +387,18 @@ async fn reorder(
         })
         .collect();
 
-    db::questions::reorder_questions(&pool, ordering)
-        .await
-        .unwrap();
-    let categories = db::categories::get_all_categories(&pool).await.unwrap();
+    db::questions::reorder_questions(&pool, ordering).await?;
+    let categories = db::categories::get_all_categories(&pool).await?;
     let table = QuestionsTable {
         categories: categories.clone(),
         selected: body.category.unwrap_or(-1),
         questions: get_questions_for_category(&pool, body.category)
-            .await
+            .await?
             .into_iter()
             .map(|c| QuestionRow { question: c })
             .collect(),
     };
-    QuestionsPage { table, categories }
+    Ok(QuestionsPage { table, categories })
 }
 
 pub fn questions_router(state: AppState) -> Router {

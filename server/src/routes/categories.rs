@@ -2,7 +2,6 @@ use askama::Template;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
-    response::IntoResponse,
     routing::{delete, get, post},
     Json, Router,
 };
@@ -14,6 +13,8 @@ use db::Category;
 use crate::deserializers::deserialize_bool_from_checkbox;
 use crate::deserializers::Stri64;
 use crate::AppState;
+
+use super::ApiResponse;
 
 #[derive(Deserialize)]
 struct NewCategory {
@@ -62,71 +63,80 @@ struct CatgeoriesReorderingPage {
     categories: Vec<Category>,
 }
 
-async fn get_categories(State(pool): State<SqlitePool>) -> impl IntoResponse {
-    let categories = db::categories::get_all_categories(&pool).await.unwrap();
-    CatgeoriesPage {
+async fn get_categories(State(pool): State<SqlitePool>) -> ApiResponse<CatgeoriesPage> {
+    let categories = db::categories::get_all_categories(&pool).await?;
+    Ok(CatgeoriesPage {
         categories: categories
             .into_iter()
             .map(|c| CategoryRow { category: c })
             .collect(),
-    }
+    })
 }
 
-async fn get_category(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
-    let c = db::categories::get_category(&pool, id).await.unwrap();
-    CategoryRow { category: c }
+async fn get_category(
+    State(pool): State<SqlitePool>,
+    Path(id): Path<i64>,
+) -> ApiResponse<CategoryRow> {
+    let c = db::categories::get_category(&pool, id).await?;
+    Ok(CategoryRow { category: c })
 }
 
-async fn edit_category(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
-    let c = db::categories::get_category(&pool, id).await.unwrap();
-    CategoryRowEdit { category: c }
+async fn edit_category(
+    State(pool): State<SqlitePool>,
+    Path(id): Path<i64>,
+) -> ApiResponse<CategoryRowEdit> {
+    let c = db::categories::get_category(&pool, id).await?;
+    Ok(CategoryRowEdit { category: c })
 }
 
 async fn create_category(
     State(pool): State<SqlitePool>,
     Json(new_category): Json<NewCategory>,
-) -> impl IntoResponse {
+) -> ApiResponse<CategoryRow> {
     let id = db::categories::create_category(
         &pool,
         new_category.name.as_str(),
         new_category.hidden.unwrap_or(false),
         1,
     )
-    .await
-    .unwrap();
+    .await?;
 
-    CategoryRow {
-        category: db::categories::get_category(&pool, id).await.unwrap(),
-    }
+    Ok(CategoryRow {
+        category: db::categories::get_category(&pool, id).await?,
+    })
 }
 
 async fn update_category(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
     Json(category): Json<CategoryUpdate>,
-) -> impl IntoResponse {
+) -> ApiResponse<CategoryRow> {
     db::categories::update_category(&pool, id, category.name, category.hidden.unwrap_or(false))
-        .await
-        .unwrap();
-    CategoryRow {
-        category: db::categories::get_category(&pool, id).await.unwrap(),
-    }
+        .await?;
+    Ok(CategoryRow {
+        category: db::categories::get_category(&pool, id).await?,
+    })
 }
 
-async fn delete_category(State(pool): State<SqlitePool>, Path(id): Path<i64>) -> impl IntoResponse {
-    db::categories::delete_category(&pool, id).await.unwrap();
-    StatusCode::OK
+async fn delete_category(
+    State(pool): State<SqlitePool>,
+    Path(id): Path<i64>,
+) -> ApiResponse<StatusCode> {
+    db::categories::delete_category(&pool, id).await?;
+    Ok(StatusCode::OK)
 }
 
-async fn render_reordering_page(State(pool): State<SqlitePool>) -> impl IntoResponse {
-    let categories = db::categories::get_all_categories(&pool).await.unwrap();
-    CatgeoriesReorderingPage { categories }
+async fn render_reordering_page(
+    State(pool): State<SqlitePool>,
+) -> ApiResponse<CatgeoriesReorderingPage> {
+    let categories = db::categories::get_all_categories(&pool).await?;
+    Ok(CatgeoriesReorderingPage { categories })
 }
 
 async fn reorder(
     State(pool): State<SqlitePool>,
     Json(body): Json<OrderingBody>,
-) -> impl IntoResponse {
+) -> ApiResponse<CatgeoriesPage> {
     let ordering: Vec<db::Reorder> = body
         .row_id
         .into_iter()
@@ -137,17 +147,15 @@ async fn reorder(
         })
         .collect();
 
-    db::categories::reorder_categories(&pool, ordering)
-        .await
-        .unwrap();
+    db::categories::reorder_categories(&pool, ordering).await?;
 
-    let categories = db::categories::get_all_categories(&pool).await.unwrap();
-    CatgeoriesPage {
+    let categories = db::categories::get_all_categories(&pool).await?;
+    Ok(CatgeoriesPage {
         categories: categories
             .into_iter()
             .map(|c| CategoryRow { category: c })
             .collect(),
-    }
+    })
 }
 
 pub fn category_router(state: AppState) -> Router {

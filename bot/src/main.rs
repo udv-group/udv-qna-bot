@@ -2,7 +2,6 @@ mod auth;
 mod group_chat;
 mod private_chat;
 
-use std::error::Error;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -11,7 +10,7 @@ use teloxide::{
     prelude::*,
 };
 
-async fn run() -> Result<(), Box<dyn Error>> {
+async fn run() -> anyhow::Result<()> {
     dotenv::var("USE_AUTH")
         .expect("Variable USE_AUTH should be set")
         .parse::<bool>()
@@ -23,7 +22,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
     let path = dotenv::var("DB_PATH").expect("DB_PATH must be set");
     let conn = Arc::new(db::establish_connection(&path).await?);
-    let bot = Bot::from_env().auto_send();
+    let bot = Bot::from_env();
     let storage = SqliteStorage::open(&path, Json).await.unwrap();
 
     let handler = dptree::entry()
@@ -49,7 +48,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn start_bot() -> Result<(), Box<dyn Error>> {
+async fn start_bot() -> anyhow::Result<()> {
     dotenv::dotenv().ok();
     pretty_env_logger::formatted_builder()
         .write_style(pretty_env_logger::env_logger::WriteStyle::Auto)
@@ -65,6 +64,6 @@ async fn start_bot() -> Result<(), Box<dyn Error>> {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> anyhow::Result<()> {
     start_bot().await
 }

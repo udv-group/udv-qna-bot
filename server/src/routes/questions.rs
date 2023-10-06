@@ -141,7 +141,7 @@ async fn get_questions_for_category(
     category: Option<i64>,
 ) -> sqlx::Result<Vec<Question>> {
     let questions = match category {
-        Some(id) => db::questions::get_questions_by_category(pool, id).await?,
+        Some(id) => db::questions::get_questions_by_category_id(pool, id).await?,
         None => db::questions::get_all_questions(pool).await?,
     };
     Ok(questions)
@@ -239,9 +239,10 @@ async fn edit_question(
     State(pool): State<SqlitePool>,
     Path(id): Path<i64>,
 ) -> ApiResponse<QuestionRowEdit> {
+    let question = db::questions::get_question_by_id(&pool, id).await?;
     Ok(QuestionRowEdit {
         categories: db::categories::get_all_categories(&pool).await?,
-        question: db::questions::get_question_by_id(&pool, id).await?,
+        question,
     })
 }
 
@@ -324,7 +325,7 @@ async fn delete_attachment(
     db::questions::update_question(
         &pool,
         id,
-        question.category,
+        question.category.map(|c| c.id),
         question.question,
         question.answer,
         question.attachments.iter().map(|a| a.as_str()).collect(),
@@ -352,7 +353,7 @@ async fn add_attachment(
     db::questions::update_question(
         &pool,
         id,
-        question.category,
+        question.category.map(|c| c.id),
         question.question,
         question.answer,
         question.attachments.iter().map(|a| a.as_str()).collect(),

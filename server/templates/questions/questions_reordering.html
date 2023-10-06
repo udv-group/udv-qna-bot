@@ -40,8 +40,9 @@
               <td>
                 {% match question.category %}
                 {% when Some with (category) %}
-                {{category}}
+                {{category.name}}
                 {% when None %}
+                None
                 {% endmatch %} </td>
               <td>{{question.question}}</td>
               <td>{{question.answer}}</td>

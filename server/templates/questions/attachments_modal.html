@@ -39,11 +39,4 @@
   htmx.on('#form', 'htmx:xhr:progress', function (evt) {
     htmx.find('#progress').setAttribute('value', evt.detail.loaded / evt.detail.total * 100)
   });
-  // window.document.getElementById("modal").addEventListener("hidden", function () {
-  //   setTimeout(function () {
-  //     window.document.getElementById("attachments-modal").innerHTML = ""
-  //   }, 10)
-  // })
-
-
 </script>

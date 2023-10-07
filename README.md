@@ -47,7 +47,6 @@ DB_PATH=<Absolute path to your database>
 DATABASE_URL="sqlite:<Absolute path to your database>"
 STATIC_DIR=./static
 USE_AUTH=false
-ROCKET_CONFIG=./cms/Rocket.toml
 ```
 Install `sqlx-cli` and run database migrations
 ```

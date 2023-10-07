@@ -15,22 +15,23 @@ COPY ./server/Cargo.toml server/Cargo.toml
 
 RUN apt-get update && apt-get install libssl-dev libsqlite3-dev pkg-config -y
 
-RUN cargo build --release -p bot
+RUN cargo build --release -p server
 
-RUN rm bot/src/*.rs
+RUN rm server/src/*.rs
 RUN rm db/src/*.rs
 
-COPY ./bot/src bot/src
+COPY ./server/src server/src
 COPY ./db/src db/src
 COPY ./db/sqlx-data.json db/sqlx-data.json
 COPY ./db/migrations db/migrations
+COPY ./server/templates server/templates
 
-RUN rm /build/target/release/deps/bot*
-RUN cargo build --release -p bot
+RUN rm /build/target/release/deps/server*
+RUN cargo build --release -p server
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install libssl-dev libsqlite3-dev ca-certificates -y
-COPY --from=builder /build/target/release/bot /app/bot
+COPY --from=builder /build/target/release/server /app/server
 
 WORKDIR /app
-CMD ["/app/bot"]
+CMD ["/app/server"]

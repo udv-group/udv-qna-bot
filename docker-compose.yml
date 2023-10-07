@@ -1,29 +1,32 @@
 version: "3.9"
 services:
   bot:
-    container_name: bot
-    image: ${BOT_IMAGE_NAME:-ghcr.io/mikhailantoshkin/udv-qna-bot}:${BOT_IMAGE_VERSION:-nightly}
+    container_name: udv_qna_bot
+    image: ${BOT_IMAGE_NAME:-ghcr.io/mikhailantoshkin/udv-qna-bot}:${BOT_IMAGE_VERSION:-main}
+    restart: always
     build:
       context: .
       dockerfile: ./bot/Dockerfile
     volumes:
-      - ${DB_DIR:-./database}:/data
-      - ${STATIC_DIR:-./static}:/static
+      - ${DB_DIR:-.database}:/data
+      - ${STATIC_DIR:-.static}:/static
     environment:
-       DB_PATH: /data/bot.db
-       TELOXIDE_TOKEN: ${TELOXIDE_TOKEN}
-       USE_AUTH: ${USE_AUTH:-true}
-       STATIC_DIR: /static
-  cms:
-    container_name: cms
-    image: ${CMS_IMAGE_NAME:-ghcr.io/mikhailantoshkin/udv-qna-cms}:${CMS_IMAGE_VERSION:-nightly}
+      DB_PATH: /data/bot.db
+      TELOXIDE_TOKEN: ${TELOXIDE_TOKEN}
+      USE_AUTH: ${USE_AUTH:-true}
+      STATIC_DIR: /static
+  server:
+    container_name: udv_qna_bot_managment_server
+    image: ${SERVER_IMAGE_NAME:-ghcr.io/mikhailantoshkin/udv-qna-cms}:${SERVER_IMAGE_VERSION:-main}
+    restart: always
     build:
       context: .
-      dockerfile: ./cms/Dockerfile
-    volumes_from:
-      - bot
+      dockerfile: ./server/Dockerfile
+    volumes:
+      - ${DB_DIR:-.database}:/data
+      - ${STATIC_DIR:-.static}:/static
     environment:
-       DB_PATH: /data/bot.db
-       STATIC_DIR: /static
+      DB_PATH: /data/bot.db
+      STATIC_DIR: /static
     ports:
-      - "${CMS_BIND_PORT:-8080}:8000"
+      - "${SERVER_BIND_PORT:-8080}:3000"

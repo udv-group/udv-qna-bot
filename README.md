@@ -11,26 +11,6 @@ Q&A bot for internal use at UDV
 ### Directories
 * static - directory for static [documents](https://core.telegram.org/bots/api#senddocument), that bot can answer with
 
-## Deployment
-Set the environmental variables in .env file
-```
-TELOXIDE_TOKEN=<Your token here>
-DB_DIR=<Absolute path to your database directory>
-STATIC_DIR=./static
-USE_AUTH=false
-```
-
-Create database file
-```
-touch <Absolute path to your database directory>/bot.db
-```
-
-Build images and run with docker-compose
-```
-$ docker-compose build
-$ docker-compose run -d
-```
-
 ## Development
 ### Bot
 Install sqlite3 build dependencies and sqlite3 CLI

@@ -1,4 +1,5 @@
 [package]
+repository = "https://github.com/udv-group/udv-qna-bot"
 name = "server"
 version = "0.1.0"
 edition = "2021"

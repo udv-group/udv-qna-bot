@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        UPDATE categories SET name=?1, hidden=?2 WHERE categories.id = ?3\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "481d9a78f2affcf3836ed94a056a1c081e80b7fecf9b00096208ce0d623f8e1a"
+}

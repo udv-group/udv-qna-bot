@@ -1,0 +1,80 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT categories.id as category_id, categories.name as category_name, categories.hidden as category_hidden, categories.ordering as category_ordering,\n            questions.*  \n        FROM questions JOIN categories on questions.category = categories.id \n        WHERE questions.category = ?1 \n        ORDER BY questions.ordering, questions.id DESC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "category_id",
+        "ordinal": 0,
+        "type_info": "Int64"
+      },
+      {
+        "name": "category_name",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "category_hidden",
+        "ordinal": 2,
+        "type_info": "Bool"
+      },
+      {
+        "name": "category_ordering",
+        "ordinal": 3,
+        "type_info": "Int64"
+      },
+      {
+        "name": "id",
+        "ordinal": 4,
+        "type_info": "Int64"
+      },
+      {
+        "name": "category",
+        "ordinal": 5,
+        "type_info": "Int64"
+      },
+      {
+        "name": "question",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "answer",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "hidden",
+        "ordinal": 8,
+        "type_info": "Bool"
+      },
+      {
+        "name": "ordering",
+        "ordinal": 9,
+        "type_info": "Int64"
+      },
+      {
+        "name": "attachments",
+        "ordinal": 10,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a08108f82c315539547b12ce2c469f65b97c46774570b1b9c2ce89e8449ecabf"
+}

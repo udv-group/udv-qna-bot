@@ -12,3 +12,4 @@ Cargo.lock
 .*
 static
 !.github
+!.sqlx

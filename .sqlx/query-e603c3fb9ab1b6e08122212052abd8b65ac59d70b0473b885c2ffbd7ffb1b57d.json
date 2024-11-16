@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        INSERT INTO questions (category, question, answer, attachments, hidden, ordering) VALUES (?1, ?2, ?3, ?4, ?5, ?6)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "e603c3fb9ab1b6e08122212052abd8b65ac59d70b0473b885c2ffbd7ffb1b57d"
+}

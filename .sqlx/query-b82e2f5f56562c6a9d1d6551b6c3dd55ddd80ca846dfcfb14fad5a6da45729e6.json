@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n            UPDATE questions SET ordering=?1 WHERE questions.id = ?2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "b82e2f5f56562c6a9d1d6551b6c3dd55ddd80ca846dfcfb14fad5a6da45729e6"
+}

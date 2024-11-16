@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        UPDATE questions SET category=?1, question=?2, answer=?3, attachments=?4, hidden=?5 WHERE questions.id = ?6\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "e14a774eac710117e1abe9fe0a18771a399cbd65342d76ff7292bdd6143763ed"
+}

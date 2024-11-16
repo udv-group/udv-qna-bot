@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT * FROM questions WHERE questions.id = ?1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Int64"
+      },
+      {
+        "name": "category",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "question",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "answer",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "hidden",
+        "ordinal": 4,
+        "type_info": "Bool"
+      },
+      {
+        "name": "ordering",
+        "ordinal": 5,
+        "type_info": "Int64"
+      },
+      {
+        "name": "attachments",
+        "ordinal": 6,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "42630695797644c3c01dba66f7e471a96748af60b5824ae58902a855e71668f3"
+}

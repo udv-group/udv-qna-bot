@@ -305,9 +305,9 @@ pub fn make_private_chat_branch(
         .branch(commands_handler)
         .branch(dialogues_handler);
 
-    return dptree::entry()
+    dptree::entry()
         .branch(Update::filter_message().chain(messages_handler))
-        .branch(Update::filter_my_chat_member().endpoint(handle_private_chat_member));
+        .branch(Update::filter_my_chat_member().endpoint(handle_private_chat_member))
 }
 
 pub fn filter_private_chats(upd: Update) -> bool {

@@ -1,6 +1,6 @@
 [package]
 name = "udv-qna-bot"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 repository = "https://github.com/udv-group/udv-qna-bot"
 
@@ -8,15 +8,15 @@ repository = "https://github.com/udv-group/udv-qna-bot"
 anyhow = "1"
 askama = { version = "0.12", features = ["with-axum"] }
 askama_axum = "0.4"
-axum = { version = "0.7.8", features = ["macros", "multipart"] }
+axum = { version = "0.7", features = ["macros", "multipart"] }
 axum_typed_multipart = "0.13"
 clap = { version = "4.5", features = ["derive"] }
-config = { version = "0.14" }
+config = { version = "0.15" }
 csv = "1.1"
 dotenv = "0.15.0"
 futures-util = "0.3"
-itertools = "0.13"
-secrecy = { version = "0.8", features = ["serde"] }
+itertools = "0.14"
+secrecy = { version = "0.10", features = ["serde"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = '1'
 serde-aux = { version = "4" }
@@ -33,10 +33,7 @@ features = ["registry", "env-filter", "fmt"]
 
 [dependencies.teloxide]
 version = "0.13"
-features = [
-    "macros",
-    "sqlite-storage-nativetls"
-]
+features = ["macros", "sqlite-storage-nativetls"]
 
 [dependencies.sqlx]
 version = "0.7"

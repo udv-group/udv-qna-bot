@@ -1,6 +1,19 @@
+use prometheus::register_counter_vec;
+use prometheus::CounterVec;
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::{fmt, EnvFilter};
+
+use lazy_static::lazy_static;
+
+lazy_static! {
+    pub static ref QUESTION_CNTR: CounterVec = register_counter_vec!(
+        "questions_answered_total",
+        "Number of answered questions",
+        &["group", "question"]
+    )
+    .unwrap();
+}
 
 pub fn init_tracing() {
     let mut fmt_layer = fmt::layer();

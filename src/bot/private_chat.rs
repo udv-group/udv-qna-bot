@@ -26,6 +26,7 @@ use crate::db::{
     },
     Question,
 };
+use crate::telemetry::QUESTION_CNTR;
 
 use super::auth;
 
@@ -160,6 +161,10 @@ async fn on_question_select(
                 .await?;
         }
         selected_question => {
+            QUESTION_CNTR
+                .with_label_values(&[category.as_str(), selected_question])
+                .inc();
+
             match get_question_by_category_name(conn.borrow(), selected_question, &category).await {
                 Ok(question) => reply_with_answer(bot, msg, static_dir, question).await?,
                 Err(_) => {

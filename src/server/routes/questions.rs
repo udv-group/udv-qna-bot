@@ -1,12 +1,13 @@
 use anyhow::anyhow;
 use askama::Template;
-use askama_axum::IntoResponse;
+use askama_web::WebTemplate;
+use axum_typed_multipart::async_trait;
+
 use axum::{
-    async_trait,
     body::Bytes,
     extract::{Path, Query, State},
-    http::HeaderMap,
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
+    response::IntoResponse,
     routing::get,
     Json, Router,
 };
@@ -87,20 +88,20 @@ impl TryFromChunks for FormBool {
     }
 }
 
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "questions/question_row.html", escape = "none")]
 struct QuestionRow {
     question: Question,
 }
 
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "questions/question_row_edit.html", escape = "none")]
 struct QuestionRowEdit {
     categories: Vec<Category>,
     question: Question,
 }
 
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "questions/questions_table.html", escape = "none")]
 struct QuestionsTable {
     questions: Vec<QuestionRow>,
@@ -108,27 +109,27 @@ struct QuestionsTable {
     selected: i64,
 }
 
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "questions/questions.html", escape = "none")]
 struct QuestionsPage {
     categories: Vec<Category>,
     table: QuestionsTable,
 }
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "questions/attachments_modal.html", escape = "none")]
 struct Attachments {
     id: i64,
     attachments: Vec<AttachmentRow>,
 }
 
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "questions/attachment_row.html", escape = "none")]
 struct AttachmentRow {
     question_id: i64,
     name: String,
 }
 
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "questions/questions_reordering.html", escape = "none")]
 struct QuestionsReordering {
     questions: Vec<Question>,

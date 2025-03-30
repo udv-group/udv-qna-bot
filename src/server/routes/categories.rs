@@ -1,4 +1,5 @@
 use askama::Template;
+use askama_web::WebTemplate;
 use axum::{
     extract::{Path, State},
     http::StatusCode,
@@ -44,25 +45,25 @@ struct OrderingBody {
     row_id: Vec<Stri64>,
 }
 
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "categories/category_row.html", escape = "none")]
 struct CategoryRow {
     category: Category,
 }
 
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "categories/category_row_edit.html", escape = "none")]
 struct CategoryRowEdit {
     category: Category,
 }
 
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "categories/categories.html", escape = "none")]
 struct CatgeoriesPage {
     categories: Vec<CategoryRow>,
 }
 
-#[derive(Template)]
+#[derive(Template, WebTemplate)]
 #[template(path = "categories/categories_reordering.html", escape = "none")]
 struct CatgeoriesReorderingPage {
     categories: Vec<Category>,

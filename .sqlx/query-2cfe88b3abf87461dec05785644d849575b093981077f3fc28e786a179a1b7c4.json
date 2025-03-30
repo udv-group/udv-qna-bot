@@ -6,7 +6,7 @@
       {
         "name": "id",
         "ordinal": 0,
-        "type_info": "Int64"
+        "type_info": "Integer"
       },
       {
         "name": "name",
@@ -21,7 +21,7 @@
       {
         "name": "ordering",
         "ordinal": 3,
-        "type_info": "Int64"
+        "type_info": "Integer"
       }
     ],
     "parameters": {

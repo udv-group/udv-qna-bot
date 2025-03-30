@@ -6,7 +6,7 @@
       {
         "name": "category_id",
         "ordinal": 0,
-        "type_info": "Int64"
+        "type_info": "Integer"
       },
       {
         "name": "category_name",
@@ -21,17 +21,17 @@
       {
         "name": "category_ordering",
         "ordinal": 3,
-        "type_info": "Int64"
+        "type_info": "Integer"
       },
       {
         "name": "id",
         "ordinal": 4,
-        "type_info": "Int64"
+        "type_info": "Integer"
       },
       {
         "name": "category",
         "ordinal": 5,
-        "type_info": "Int64"
+        "type_info": "Integer"
       },
       {
         "name": "question",
@@ -56,7 +56,7 @@
       {
         "name": "ordering",
         "ordinal": 10,
-        "type_info": "Int64"
+        "type_info": "Integer"
       }
     ],
     "parameters": {
